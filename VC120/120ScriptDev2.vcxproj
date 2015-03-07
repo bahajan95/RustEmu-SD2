@@ -98,7 +98,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>..\..\..\..\dep\include\;..\..\..\shared\;..\..\..\framework\;..\..\..\game\;..\include\;..\base\;..\..\..\..\dep\ACE_wrappers\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(BOOST_ROOT);..\..\..\..\dep\include\;..\..\..\shared\;..\..\..\framework\;..\..\..\game\;..\include\;..\base\;..\..\..\..\dep\ACE_wrappers\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_DEBUG;MANGOS_DEBUG;_WINDOWS;_USRDLL;SCRIPT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>true</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
@@ -114,8 +114,8 @@
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>mangosd.lib;ACEd.lib;framework.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>..\..\..\..\win\VC120\mangosd__Win32_Debug;..\..\..\..\win\VC120\framework__Win32_Debug;..\..\..\..\dep\lib\win32_debug\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>mangosd.lib;framework.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(BOOST_ROOT)\stage\lib;..\..\..\..\win\VC120\mangosd__Win32_Debug;..\..\..\..\win\VC120\framework__Win32_Debug;..\..\..\..\dep\lib\win32_debug\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
       <RandomizedBaseAddress>false</RandomizedBaseAddress>
@@ -131,7 +131,7 @@
     </Midl>
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>..\..\..\..\dep\include\;..\..\..\shared\;..\..\..\framework\;..\..\..\game\;..\include\;..\base\;..\..\..\..\dep\ACE_wrappers\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(BOOST_ROOT);..\..\..\..\dep\include\g3dlite;..\..\..\..\dep\include\;..\..\..\shared\;..\..\..\framework\;..\..\..\game\;..\include\;..\base\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_DEBUG;MANGOS_DEBUG;_WINDOWS;_USRDLL;SCRIPT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>true</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
@@ -147,8 +147,8 @@
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>mangosd.lib;ACEd.lib;framework.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>..\..\..\..\win\VC120\mangosd__x64_Debug;..\..\..\..\win\VC120\framework__x64_Debug;..\..\..\..\dep\lib\x64_Debug\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>mangosd.lib;framework.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(BOOST_ROOT)\stage\x64\lib;..\..\..\..\win\VC120\mangosd__x64_Debug;..\..\..\..\win\VC120\framework__x64_Debug;..\..\..\..\dep\lib\x64_Debug\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
       <RandomizedBaseAddress>false</RandomizedBaseAddress>
@@ -161,7 +161,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
       <AdditionalOptions>/Zm200 %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalIncludeDirectories>..\..\..\..\dep\include\;..\..\..\shared\;..\..\..\framework\;..\..\..\game\;..\include\;..\base\;..\..\..\..\dep\ACE_wrappers\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(BOOST_ROOT);..\..\..\..\dep\include\;..\..\..\shared\;..\..\..\framework\;..\..\..\game\;..\include\;..\base\;..\..\..\..\dep\ACE_wrappers\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;SCRIPT;_SECURE_SCL=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>false</MinimalRebuild>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
@@ -175,8 +175,8 @@
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>mangosd.lib;ACE.lib;framework.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>..\..\..\..\win\VC120\mangosd__Win32_Release;..\..\..\..\win\VC120\framework__Win32_Release;..\..\..\..\dep\lib\win32_release\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>mangosd.lib;framework.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(BOOST_ROOT)\stage\lib;..\..\..\..\win\VC120\mangosd__Win32_Release;..\..\..\..\win\VC120\framework__Win32_Release;..\..\..\..\dep\lib\win32_release\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
       <OptimizeReferences>true</OptimizeReferences>
@@ -193,7 +193,7 @@
     </Midl>
     <ClCompile>
       <AdditionalOptions>/Zm200 %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalIncludeDirectories>..\..\..\..\dep\include\;..\..\..\shared\;..\..\..\framework\;..\..\..\game\;..\include\;..\base\;..\..\..\..\dep\ACE_wrappers\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(BOOST_ROOT);..\..\..\..\dep\include\;..\..\..\shared\;..\..\..\framework\;..\..\..\game\;..\include\;..\base\;..\..\..\..\dep\ACE_wrappers\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;SCRIPT;_SECURE_SCL=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <PrecompiledHeader>Use</PrecompiledHeader>
@@ -206,8 +206,8 @@
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>mangosd.lib;ACE.lib;framework.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>..\..\..\..\win\VC120\mangosd__x64_Release;..\..\..\..\win\VC120\framework__x64_Release;..\..\..\..\dep\lib\x64_release\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>mangosd.lib;framework.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(BOOST_ROOT)\stage\x64\lib;..\..\..\..\win\VC120\mangosd__x64_Release;..\..\..\..\win\VC120\framework__x64_Release;..\..\..\..\dep\lib\x64_release\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
       <OptimizeReferences>true</OptimizeReferences>
@@ -219,11 +219,17 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\base\BSW_ai.cpp" />
+    <ClCompile Include="..\base\BSW_instance.cpp" />
     <ClCompile Include="..\base\escort_ai.cpp" />
     <ClCompile Include="..\base\follower_ai.cpp" />
     <ClCompile Include="..\base\guard_ai.cpp" />
     <ClCompile Include="..\base\pet_ai.cpp" />
+    <ClCompile Include="..\include\sc_timer.cpp" />
+    <ClCompile Include="..\include\sc_utility.cpp" />
     <ClCompile Include="..\scripts\battlegrounds\battleground.cpp" />
+    <ClCompile Include="..\scripts\battlegrounds\battlegroundIC.cpp" />
+    <ClCompile Include="..\scripts\battlegrounds\battlegroundSA.cpp" />
     <ClCompile Include="..\scripts\eastern_kingdoms\alterac_mountains.cpp" />
     <ClCompile Include="..\scripts\eastern_kingdoms\arathi_highlands.cpp" />
     <ClCompile Include="..\scripts\eastern_kingdoms\blasted_lands.cpp" />
@@ -438,6 +444,11 @@
     <ClCompile Include="..\scripts\northrend\grizzly_hills.cpp" />
     <ClCompile Include="..\scripts\northrend\howling_fjord.cpp" />
     <ClCompile Include="..\scripts\northrend\icecrown.cpp" />
+    <ClCompile Include="..\scripts\northrend\icecrown_citadel\icecrown_citadel\icecrown_lights_hammer.cpp" />
+    <ClCompile Include="..\scripts\northrend\icecrown_citadel\icecrown_citadel\icecrown_spire.cpp" />
+    <ClCompile Include="..\scripts\northrend\icecrown_citadel\icecrown_citadel\icecrown_teleport.cpp" />
+    <ClCompile Include="..\scripts\northrend\ruby_sanctum\instance_ruby_sanctum.cpp" />
+    <ClCompile Include="..\scripts\northrend\ruby_sanctum\ruby_sanctum.cpp" />
     <ClCompile Include="..\scripts\northrend\sholazar_basin.cpp" />
     <ClCompile Include="..\scripts\northrend\storm_peaks.cpp" />
     <ClCompile Include="..\scripts\northrend\zuldrak.cpp" />
@@ -533,7 +544,6 @@
     <ClCompile Include="..\scripts\northrend\ruby_sanctum\boss_halion.cpp" />
     <ClCompile Include="..\scripts\northrend\ruby_sanctum\boss_saviana.cpp" />
     <ClCompile Include="..\scripts\northrend\ruby_sanctum\boss_zarithrian.cpp" />
-    <ClCompile Include="..\scripts\northrend\ruby_sanctum\instance_ruby_sanctum.cpp" />
     <ClCompile Include="..\scripts\northrend\ulduar\halls_of_lightning\boss_bjarngrim.cpp" />
     <ClCompile Include="..\scripts\northrend\ulduar\halls_of_lightning\boss_ionar.cpp" />
     <ClCompile Include="..\scripts\northrend\ulduar\halls_of_lightning\boss_loken.cpp" />
@@ -666,6 +676,7 @@
     <ClCompile Include="..\scripts\world\mob_generic_creature.cpp" />
     <ClCompile Include="..\scripts\world\npc_professions.cpp" />
     <ClCompile Include="..\scripts\world\npcs_special.cpp" />
+    <ClCompile Include="..\scripts\world\pet_scripts.cpp" />
     <ClCompile Include="..\scripts\world\spell_scripts.cpp" />
     <ClCompile Include="..\scripts\world\world_map_scripts.cpp" />
     <ClCompile Include="..\include\precompiled.cpp">
@@ -685,10 +696,14 @@
     <ClCompile Include="..\ScriptMgr.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\base\BSW_ai.h" />
+    <ClInclude Include="..\base\BSW_instance.h" />
     <ClInclude Include="..\base\escort_ai.h" />
     <ClInclude Include="..\base\follower_ai.h" />
     <ClInclude Include="..\base\guard_ai.h" />
     <ClInclude Include="..\base\pet_ai.h" />
+    <ClInclude Include="..\include\sc_timer.h" />
+    <ClInclude Include="..\include\sc_utility.h" />
     <ClInclude Include="..\scripts\eastern_kingdoms\blackrock_depths\blackrock_depths.h" />
     <ClInclude Include="..\scripts\eastern_kingdoms\blackrock_spire\blackrock_spire.h" />
     <ClInclude Include="..\scripts\eastern_kingdoms\blackwing_lair\blackwing_lair.h" />

@@ -53,12 +53,6 @@ enum
     SAY_COMPLETE_QUEST          = -1509017,                 // Yell when realm complete quest 8743 for world event
 };
 
-struct SpawnLocation
-{
-    uint32 m_uiEntry;
-    float m_fX, m_fY, m_fZ, m_fO;
-};
-
 // Spawn coords for Andorov and his team
 static const SpawnLocation aAndorovSpawnLocs[MAX_HELPERS] =
 {

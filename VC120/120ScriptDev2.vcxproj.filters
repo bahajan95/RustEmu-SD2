@@ -1666,8 +1666,41 @@
     <ClCompile Include="..\scripts\northrend\ruby_sanctum\boss_zarithrian.cpp">
       <Filter>scripts\northrend\ruby_sanctum</Filter>
     </ClCompile>
+    <ClCompile Include="..\base\BSW_ai.cpp">
+      <Filter>base</Filter>
+    </ClCompile>
+    <ClCompile Include="..\base\BSW_instance.cpp">
+      <Filter>base</Filter>
+    </ClCompile>
+    <ClCompile Include="..\include\sc_timer.cpp">
+      <Filter>include</Filter>
+    </ClCompile>
+    <ClCompile Include="..\include\sc_utility.cpp">
+      <Filter>include</Filter>
+    </ClCompile>
     <ClCompile Include="..\scripts\northrend\ruby_sanctum\instance_ruby_sanctum.cpp">
       <Filter>scripts\northrend\ruby_sanctum</Filter>
+    </ClCompile>
+    <ClCompile Include="..\scripts\northrend\ruby_sanctum\ruby_sanctum.cpp">
+      <Filter>scripts\northrend\ruby_sanctum</Filter>
+    </ClCompile>
+    <ClCompile Include="..\scripts\northrend\icecrown_citadel\icecrown_citadel\icecrown_lights_hammer.cpp">
+      <Filter>scripts\northrend\icecrown_citadel\icecrown_citadel</Filter>
+    </ClCompile>
+    <ClCompile Include="..\scripts\northrend\icecrown_citadel\icecrown_citadel\icecrown_spire.cpp">
+      <Filter>scripts\northrend\icecrown_citadel\icecrown_citadel</Filter>
+    </ClCompile>
+    <ClCompile Include="..\scripts\northrend\icecrown_citadel\icecrown_citadel\icecrown_teleport.cpp">
+      <Filter>scripts\northrend\icecrown_citadel\icecrown_citadel</Filter>
+    </ClCompile>
+    <ClCompile Include="..\scripts\battlegrounds\battlegroundIC.cpp">
+      <Filter>scripts\battlegrounds</Filter>
+    </ClCompile>
+    <ClCompile Include="..\scripts\battlegrounds\battlegroundSA.cpp">
+      <Filter>scripts\battlegrounds</Filter>
+    </ClCompile>
+    <ClCompile Include="..\scripts\world\pet_scripts.cpp">
+      <Filter>scripts\world</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1915,6 +1948,18 @@
     <ClInclude Include="..\sd2_revision_nr.h" />
     <ClInclude Include="..\sd2_revision_sql.h" />
     <ClInclude Include="..\ScriptMgr.h" />
+    <ClInclude Include="..\base\BSW_ai.h">
+      <Filter>base</Filter>
+    </ClInclude>
+    <ClInclude Include="..\base\BSW_instance.h">
+      <Filter>base</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\sc_timer.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\sc_utility.h">
+      <Filter>include</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="..\revision.h" />

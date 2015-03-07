@@ -67,11 +67,6 @@ enum
     FACTION_BLACK_DRAGON        = 103
 };
 
-struct SpawnLocation
-{
-    float m_fX, m_fY, m_fZ, m_fO;
-};
-
 static const SpawnLocation aStadiumLocs[7] =
 {
     {210.00f, -420.30f, 110.94f, 3.14f},                    // dragons summon location

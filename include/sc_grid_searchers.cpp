@@ -1,4 +1,4 @@
-/* This file is part of the ScriptDev2 Project. See AUTHORS file for Copyright information
+/* Copyright (C) 2006 - 2013 ScriptDev2 <http://www.scriptdev2.com/>
  * This program is free software licensed under GPL version 2
  * Please see the included DOCS/LICENSE.TXT for more information */
 
@@ -8,6 +8,16 @@
 #include "CellImpl.h"
 #include "GridNotifiers.h"
 #include "GridNotifiersImpl.h"
+
+// return closest attackable Unit in grid, with range from pSource
+Unit* GetClosestAttackableUnit(Unit* pSource, float fMaxSearchRange) 
+{ 
+    Unit* pTarget = NULL; 
+    MaNGOS::NearestAttackableUnitInObjectRangeCheck unit_check(pSource, fMaxSearchRange); 
+    MaNGOS::UnitLastSearcher<MaNGOS::NearestAttackableUnitInObjectRangeCheck> searcher(pTarget, unit_check); 
+    Cell::VisitAllObjects(pSource, searcher, fMaxSearchRange); 
+    return pTarget; 
+}
 
 // return closest GO in grid, with range from pSource
 GameObject* GetClosestGameObjectWithEntry(WorldObject* pSource, uint32 uiEntry, float fMaxSearchRange)
@@ -49,4 +59,11 @@ void GetCreatureListWithEntryInGrid(std::list<Creature*>& lList, WorldObject* pS
     MaNGOS::CreatureListSearcher<MaNGOS::AllCreaturesOfEntryInRangeCheck> searcher(lList, check);
 
     Cell::VisitGridObjects(pSource, searcher, fMaxSearchRange);
+}
+
+void GetPlayerListInGrid(std::list<Player*>& pList, WorldObject* pSource, float fMaxSearchRange)
+{
+        MaNGOS::AnyPlayerInObjectRangeCheck u_check(pSource, fMaxSearchRange);
+        MaNGOS::PlayerListSearcher<MaNGOS::AnyPlayerInObjectRangeCheck > checker(pList, u_check);
+        Cell::VisitWorldObjects(pSource, checker, fMaxSearchRange);
 }

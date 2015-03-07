@@ -1,4 +1,4 @@
-/* This file is part of the ScriptDev2 Project. See AUTHORS file for Copyright information
+/* Copyright (C) 2006 - 2013 ScriptDev2 <http://www.scriptdev2.com/>
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
@@ -174,7 +174,11 @@ bool EquippedOk(Player* pPlayer, uint32 spellId)
 
     for (int i = 0; i < 3; ++i)
     {
-        uint32 reqSpell = spell->EffectTriggerSpell[i];
+        SpellEffectEntry const* pSpellEffect = spell->GetSpellEffect(SpellEffectIndex(i));
+        if (!pSpellEffect)
+            return false;
+
+        uint32 reqSpell = pSpellEffect->EffectTriggerSpell;;
         if (!reqSpell)
             continue;
 
@@ -743,23 +747,17 @@ bool GossipSelect_npc_prof_leather(Player* pPlayer, Creature* pCreature, uint32 
 
 void AddSC_npc_professions()
 {
-    Script* pNewScript;
+    AutoScript s;
 
-    pNewScript = new Script;
-    pNewScript->Name = "npc_prof_blacksmith";
-    pNewScript->pGossipHello =  &GossipHello_npc_prof_blacksmith;
-    pNewScript->pGossipSelect = &GossipSelect_npc_prof_blacksmith;
-    pNewScript->RegisterSelf();
+    s.newScript("npc_prof_blacksmith");
+    s->pGossipHello =  &GossipHello_npc_prof_blacksmith;
+    s->pGossipSelect = &GossipSelect_npc_prof_blacksmith;
 
-    pNewScript = new Script;
-    pNewScript->Name = "npc_prof_leather";
-    pNewScript->pGossipHello =  &GossipHello_npc_prof_leather;
-    pNewScript->pGossipSelect = &GossipSelect_npc_prof_leather;
-    pNewScript->RegisterSelf();
+    s.newScript("npc_prof_leather");
+    s->pGossipHello =  &GossipHello_npc_prof_leather;
+    s->pGossipSelect = &GossipSelect_npc_prof_leather;
 
-    /*pNewScript = new Script;
-    pNewScript->Name = "go_soothsaying_for_dummies";
-    pNewScript->pGOUse =  &GOUse_go_soothsaying_for_dummies;
-    // pNewScript->pGossipSelect = &GossipSelect_go_soothsaying_for_dummies;
-    pNewScript->RegisterSelf();*/
+    /*s.newScript("go_soothsaying_for_dummies");
+    s->pGOUse =  &GOUse_go_soothsaying_for_dummies;
+    // s->pGossipSelect = &GossipSelect_go_soothsaying_for_dummies;*/
 }

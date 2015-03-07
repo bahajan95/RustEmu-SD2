@@ -1,4 +1,4 @@
-/* This file is part of the ScriptDev2 Project. See AUTHORS file for Copyright information
+/* Copyright (C) 2006 - 2013 ScriptDev2 <http://www.scriptdev2.com/>
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
@@ -525,30 +525,21 @@ CreatureAI* GetAI_boss_ysondre(Creature* pCreature)
 
 void AddSC_bosses_emerald_dragons()
 {
-    Script* pNewScript;
+    AutoScript s;
 
-    pNewScript = new Script;
-    pNewScript->Name = "boss_emeriss";
-    pNewScript->GetAI = &GetAI_boss_emeriss;
-    pNewScript->RegisterSelf();
+    s.newScript("boss_emeriss");
+    s->GetAI = &GetAI_boss_emeriss;
 
-    pNewScript = new Script;
-    pNewScript->Name = "boss_lethon";
-    pNewScript->GetAI = &GetAI_boss_lethon;
-    pNewScript->RegisterSelf();
+    s.newScript("boss_lethon");
+    s->GetAI = &GetAI_boss_lethon;
 
-    pNewScript = new Script;
-    pNewScript->Name = "npc_spirit_shade";
-    pNewScript->GetAI = &GetAI_npc_spirit_shade;
-    pNewScript->RegisterSelf();
+    s.newScript("npc_spirit_shade");
+    s->GetAI = &GetAI_npc_spirit_shade;
 
-    pNewScript = new Script;
-    pNewScript->Name = "boss_taerar";
-    pNewScript->GetAI = &GetAI_boss_taerar;
-    pNewScript->RegisterSelf();
+    s.newScript("boss_taerar");
+    s->GetAI = &GetAI_boss_taerar;
 
-    pNewScript = new Script;
-    pNewScript->Name = "boss_ysondre";
-    pNewScript->GetAI = &GetAI_boss_ysondre;
-    pNewScript->RegisterSelf();
+    s.newScript("boss_ysondre");
+    s->GetAI = &GetAI_boss_ysondre;
+
 }

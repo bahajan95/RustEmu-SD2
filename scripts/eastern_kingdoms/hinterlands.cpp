@@ -150,18 +150,18 @@ enum
     GO_RINJI_CAGE           = 142036
 };
 
-struct Location
+struct Locations
 {
     float m_fX, m_fY, m_fZ;
 };
 
-Location m_afAmbushSpawn[] =
+Locations m_afAmbushSpawn[] =
 {
     {191.29620f, -2839.329346f, 107.388f},
     {70.972466f, -2848.674805f, 109.459f}
 };
 
-Location m_afAmbushMoveTo[] =
+Locations m_afAmbushMoveTo[] =
 {
     {166.63038f, -2824.780273f, 108.153f},
     {70.886589f, -2874.335449f, 116.675f}

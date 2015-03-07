@@ -171,7 +171,7 @@ class instance_zulaman : public ScriptedInstance
         void SetBearEventProgress(bool bIsInProgress) { m_bIsBearPhaseInProgress = bIsInProgress; }
         void SendNextBearWave(Unit* pTarget);
 
-        bool CheckConditionCriteriaMeet(Player const* pPlayer, uint32 uiInstanceConditionId, WorldObject const* pConditionSource, uint32 conditionSourceType) const override;
+        bool CheckConditionCriteriaMeet(Player const* pPlayer, uint32 uiInstanceConditionId, WorldObject const* pConditionSource, ConditionSource conditionSourceType) const override;
 
         void Update(uint32 uiDiff) override;
 

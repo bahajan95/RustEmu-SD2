@@ -85,11 +85,6 @@ enum
     MAX_DECEIVERS               = 3
 };
 
-struct EventLocations
-{
-    float m_fX, m_fY, m_fZ, m_fO;
-};
-
 static const EventLocations aMadrigosaLoc[] =
 {
     {1463.82f, 661.212f, 19.79f, 4.88f},            // reload spawn loc - the place where to spawn Felmyst

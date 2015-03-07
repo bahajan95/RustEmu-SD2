@@ -1,8 +1,9 @@
-/* This file is part of the ScriptDev2 Project. See AUTHORS file for Copyright information
+/* Copyright (C) 2006 - 2013 ScriptDev2 <http://www.scriptdev2.com/>
  * This program is free software licensed under GPL version 2
  * Please see the included DOCS/LICENSE.TXT for more information */
 
 #include "precompiled.h"
+#include "SharedDefines.h"
 
 /**
    Function that uses a door or a button
@@ -39,6 +40,56 @@ void ScriptedInstance::DoUseDoorOrButton(uint32 uiEntry, uint32 uiWithRestoreTim
     else
         // Output log, possible reason is not added GO to storage, or not yet loaded
         debug_log("SD2: Script call DoUseDoorOrButton(by Entry), but no gameobject of entry %u was created yet, or it was not stored by script for map %u.", uiEntry, instance->GetId());
+}
+
+void ScriptedInstance::DoOpenDoor(ObjectGuid guid, bool bUseAlternativeState /*= false*/)
+{
+    if (guid.IsEmpty())
+        return;
+
+    GameObject* pGo = instance->GetGameObject(guid);
+
+    if (pGo)
+        pGo->SetGoState(bUseAlternativeState ? GO_STATE_ACTIVE_ALTERNATIVE : GO_STATE_ACTIVE);
+    else
+        debug_log("SD2: DoOpenDoor attempt set data to object %u, but no this object", guid.GetCounter());
+}
+
+void ScriptedInstance::DoOpenDoor(uint32 uiEntry, bool bUseAlternativeState /*= false*/)
+{
+    EntryGuidMap::iterator find = m_mGoEntryGuidStore.find(uiEntry);
+    if (find != m_mGoEntryGuidStore.end())
+    {
+        ObjectGuid guid = find->second;
+        DoOpenDoor(guid, bUseAlternativeState);
+    }
+    else
+        debug_log("SD2: Script call DoOpenDoor (by Entry), but no gameobject of entry %u was created yet, or it was not stored by script for map %u.", uiEntry, instance->GetId());
+}
+
+void ScriptedInstance::DoCloseDoor(ObjectGuid guid)
+{
+    if (guid.IsEmpty())
+        return;
+
+    GameObject* pGo = instance->GetGameObject(guid);
+
+    if (pGo)
+        pGo->SetGoState(GO_STATE_READY);
+    else
+        debug_log("SD2: DoCloseDoor attempt set data to object %u, but no this object", guid.GetCounter());
+}
+
+void ScriptedInstance::DoCloseDoor(uint32 uiEntry)
+{
+    EntryGuidMap::iterator find = m_mGoEntryGuidStore.find(uiEntry);
+    if (find != m_mGoEntryGuidStore.end())
+    {
+        ObjectGuid guid = find->second;
+        DoCloseDoor(guid);
+    }
+    else
+        debug_log("SD2: Script call DoCloseDoor (by Entry), but no gameobject of entry %u was created yet, or it was not stored by script for map %u.", uiEntry, instance->GetId());
 }
 
 /**
@@ -130,6 +181,37 @@ void ScriptedInstance::DoUpdateWorldState(uint32 uiStateId, uint32 uiStateData)
     }
     else
         debug_log("SD2: DoUpdateWorldState attempt send data but no players in map.");
+}
+
+void ScriptedInstance::DoCompleteAchievement(uint32 uiAchievmentId)
+{
+    Map::PlayerList const& lPlayers = instance->GetPlayers();
+
+    if (!lPlayers.isEmpty())
+    {
+        for(Map::PlayerList::const_iterator itr = lPlayers.begin(); itr != lPlayers.end(); ++itr)
+        {
+            if (Player* pPlayer = itr->getSource())
+                pPlayer->CompletedAchievement(uiAchievmentId);
+        }
+    }
+    else
+        debug_log("SD2: DoCompleteAchievement attempt set data but no players in map.");
+}
+void ScriptedInstance::DoUpdateAchievementCriteria(AchievementCriteriaTypes type, uint32 miscvalue1 /*=0*/, uint32 miscvalue2 /*=0*/)
+{
+    Map::PlayerList const& lPlayers = instance->GetPlayers();
+
+    if (!lPlayers.isEmpty())
+    {
+        for(Map::PlayerList::const_iterator itr = lPlayers.begin(); itr != lPlayers.end(); ++itr)
+        {
+            if (Player* pPlayer = itr->getSource())
+                pPlayer->UpdateAchievementCriteria(type, miscvalue1, miscvalue2);
+        }
+    }
+    else
+        debug_log("SD2: DoUpdateAchievementCriteria attempt set data but no players in map.");
 }
 
 /// Get the first found Player* (with requested properties) in the map. Can return NULL.
@@ -338,4 +420,62 @@ void DialogueHelper::DialogueUpdate(uint32 uiDiff)
         else
             m_uiTimer -= uiDiff;
     }
+}
+
+void ScriptedInstance::DestroyItemFromAllPlayers(uint32 uiItemId)
+{
+    Map::PlayerList const& lPlayers = instance->GetPlayers();
+
+    if (!lPlayers.isEmpty())
+    {
+        for(Map::PlayerList::const_iterator itr = lPlayers.begin(); itr != lPlayers.end(); ++itr)
+        {
+            if (Player* pPlayer = itr->getSource())
+                if (pPlayer->GetItemCount(uiItemId,true) > 0)
+                    pPlayer->DestroyItemCount(uiItemId,pPlayer->GetItemCount(uiItemId),true);
+        }
+    }
+    else
+        error_log("SD2: DestroyItemFromAllPlayers attempt to remove item: %u but no players in map.", uiItemId);
+}
+
+void ScriptedInstance::DoCastSpellOnPlayers(uint32 spellId, int32* bp0, int32* bp1, int32* bp2)
+{
+    Map::PlayerList const &lPlayers = instance->GetPlayers();
+    if (!lPlayers.isEmpty())
+    {
+        for (Map::PlayerList::const_iterator i = lPlayers.begin(); i != lPlayers.end(); ++i)
+        {
+            if (Player* player = i->getSource())
+            {
+                if (bp0 || bp1 || bp2)
+                    player->CastCustomSpell(player, spellId, bp0, bp1, bp2, true);
+                else
+                    player->CastSpell(player, spellId, true);
+            }
+        }
+    }
+    else
+        error_log("SD2: DoCastSpellOnPlayers attempt to cast spell: %u but no players in map.", spellId);
+}
+
+void ScriptedInstance::DoRemoveAurasDueToSpellOnPlayers(uint32 spellId)
+{
+    Map::PlayerList const &lPlayers = instance->GetPlayers();
+    if (!lPlayers.isEmpty())
+    {
+        for (Map::PlayerList::const_iterator i = lPlayers.begin(); i != lPlayers.end(); ++i)
+            if (Player* player = i->getSource())
+                player->RemoveAurasDueToSpell(spellId);
+    }
+    else
+        error_log("SD2: DoRemoveAurasDueToSpellOnPlayers attempt to remove auras due to spell: %u but no players in map.", spellId);
+}
+
+void ScriptedInstance::DoSetAlternativePowerOnPlayers(int32 amt)
+{
+    Map::PlayerList const &lPlayers = instance->GetPlayers();
+    for (Map::PlayerList::const_iterator i = lPlayers.begin(); i != lPlayers.end(); ++i)
+        if (Player* player = i->getSource())
+            player->SetPower(POWER_ALTERNATIVE, amt);
 }

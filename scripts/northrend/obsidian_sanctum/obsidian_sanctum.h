@@ -69,7 +69,7 @@ class instance_obsidian_sanctum : public ScriptedInstance
         bool GetPortaStatus(uint8 uiType) { return m_bPortalActive[uiType]; }
 
         bool CheckAchievementCriteriaMeet(uint32 uiCriteriaId, Player const* pSource, Unit const* pTarget, uint32 uiMiscValue1 /* = 0*/) const override;
-        bool CheckConditionCriteriaMeet(Player const* pPlayer, uint32 uiInstanceConditionId, WorldObject const* pConditionSource, uint32 conditionSourceType) const override;
+        bool CheckConditionCriteriaMeet(Player const* pPlayer, uint32 uiInstanceConditionId, WorldObject const* pConditionSource, ConditionSource conditionSourceType) const override;
 
     private:
         uint32 m_auiEncounter[MAX_ENCOUNTER];

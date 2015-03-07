@@ -89,11 +89,6 @@ enum
     MAX_PORTALS                 = 3,
 };
 
-struct SpawnLocation
-{
-    float fX, fY, fZ, fO;
-};
-
 // at first spawn portals got fixed coords, should be shuffled in subsequent beam phases
 static const SpawnLocation aPortalCoordinates[MAX_PORTALS] =
 {
@@ -219,7 +214,7 @@ struct boss_netherspiteAI : public ScriptedAI
     void DoSummonPortals()
     {
         for (uint8 i = 0; i < MAX_PORTALS; ++i)
-            m_creature->SummonCreature(m_vPortalEntryList[i], aPortalCoordinates[i].fX, aPortalCoordinates[i].fY, aPortalCoordinates[i].fZ, aPortalCoordinates[i].fO, TEMPSUMMON_TIMED_DESPAWN, 60000);
+            m_creature->SummonCreature(m_vPortalEntryList[i], aPortalCoordinates[i].m_fX, aPortalCoordinates[i].m_fY, aPortalCoordinates[i].m_fZ, aPortalCoordinates[i].m_fO, TEMPSUMMON_TIMED_DESPAWN, 60000);
 
         // randomize the portals after the first summon
         std::random_shuffle(m_vPortalEntryList.begin(), m_vPortalEntryList.end());

@@ -6,6 +6,8 @@
 
 // battlegrounds
 extern void AddSC_battleground();
+extern void AddSC_battlegroundSA();
+extern void AddSC_battlegroundIC();
 
 // custom
 
@@ -25,6 +27,7 @@ extern void AddSC_item_scripts();
 extern void AddSC_npc_professions();
 extern void AddSC_npcs_special();
 extern void AddSC_spell_scripts();
+extern void AddSC_pet_scripts();
 extern void AddSC_world_map_scripts();
 extern void AddSC_world_map_ebon_hold();
 
@@ -291,10 +294,13 @@ extern void AddSC_boss_lord_marrowgar();
 extern void AddSC_boss_professor_putricide();
 extern void AddSC_boss_rotface();
 extern void AddSC_boss_sindragosa();
-extern void AddSC_boss_the_lich_king();
+extern void AddSC_boss_lich_king_icc();
 extern void AddSC_boss_valithria_dreamwalker();
 extern void AddSC_gunship_battle();
 extern void AddSC_instance_icecrown_citadel();
+extern void AddSC_icecrown_spire();
+extern void AddSC_icecrown_teleporter();
+extern void AddSC_icecrown_lights_hammer();
 extern void AddSC_boss_anubrekhan();                        // naxxramas
 extern void AddSC_boss_four_horsemen();
 extern void AddSC_boss_faerlina();
@@ -330,6 +336,7 @@ extern void AddSC_boss_halion();
 extern void AddSC_boss_saviana();
 extern void AddSC_boss_zarithrian();
 extern void AddSC_instance_ruby_sanctum();
+extern void AddSC_ruby_sanctum();
 extern void AddSC_boss_bjarngrim();                         // ulduar, halls_of_lightning
 extern void AddSC_boss_ionar();
 extern void AddSC_boss_loken();
@@ -472,6 +479,8 @@ void AddScripts()
 {
     // battlegrounds
     AddSC_battleground();
+    AddSC_battlegroundSA();
+    AddSC_battlegroundIC();
 
     // custom
 
@@ -491,6 +500,7 @@ void AddScripts()
     AddSC_npc_professions();
     AddSC_npcs_special();
     AddSC_spell_scripts();
+    AddSC_pet_scripts();
     AddSC_world_map_scripts();
     AddSC_world_map_ebon_hold();
 
@@ -757,10 +767,13 @@ void AddScripts()
     AddSC_boss_professor_putricide();
     AddSC_boss_rotface();
     AddSC_boss_sindragosa();
-    AddSC_boss_the_lich_king();
+    AddSC_boss_lich_king_icc();
     AddSC_boss_valithria_dreamwalker();
     AddSC_gunship_battle();
     AddSC_instance_icecrown_citadel();
+    AddSC_icecrown_spire();
+    AddSC_icecrown_teleporter();
+    AddSC_icecrown_lights_hammer();
     AddSC_boss_anubrekhan();                                // naxxramas
     AddSC_boss_four_horsemen();
     AddSC_boss_faerlina();
@@ -796,6 +809,7 @@ void AddScripts()
     AddSC_boss_saviana();
     AddSC_boss_zarithrian();
     AddSC_instance_ruby_sanctum();
+    AddSC_ruby_sanctum();
     AddSC_boss_bjarngrim();                                 // ulduar, halls_of_lightning
     AddSC_boss_ionar();
     AddSC_boss_loken();

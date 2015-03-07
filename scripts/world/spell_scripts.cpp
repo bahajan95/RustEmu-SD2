@@ -1,4 +1,4 @@
-/* This file is part of the ScriptDev2 Project. See AUTHORS file for Copyright information
+/* Copyright (C) 2006 - 2013 ScriptDev2 <http://www.scriptdev2.com/>
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
@@ -797,7 +797,7 @@ bool EffectDummyCreature_spell_dummy_npc(Unit* pCaster, uint32 uiSpellId, SpellE
                     {
                         pCaster->CastSpell(pCreatureTarget, pSpell->Id, true);
 
-                        if (Pet* pPet = pCaster->FindGuardianWithEntry(pSpell->EffectMiscValue[uiEffIndex]))
+                        if (Pet* pPet = pCaster->FindGuardianWithEntry(pSpell->GetEffectMiscValue(SpellEffectIndex(uiEffIndex))))
                             pPet->CastSpell(pCaster, SPELL_REPROGRAM_KILL_CREDIT, true);
 
                         pCreatureTarget->ForcedDespawn();
@@ -871,6 +871,9 @@ bool EffectDummyCreature_spell_dummy_npc(Unit* pCaster, uint32 uiSpellId, SpellE
             {
                 bool isMale = urand(0, 1);
                 Player* pPlayer = pCreatureTarget->GetLootRecipient();
+
+                if (!pPlayer)
+                    return true;
 
                 if (isMale)
                     DoScriptText(SAY_ITS_MALE, pCreatureTarget, pPlayer);
@@ -1056,16 +1059,12 @@ bool EffectDummyCreature_spell_dummy_npc(Unit* pCaster, uint32 uiSpellId, SpellE
 
 void AddSC_spell_scripts()
 {
-    Script* pNewScript;
+    AutoScript s;
 
-    pNewScript = new Script;
-    pNewScript->Name = "spell_dummy_go";
-    pNewScript->pEffectDummyGO = &EffectDummyGameObj_spell_dummy_go;
-    pNewScript->RegisterSelf();
+    s.newScript("spell_dummy_go");
+    s->pEffectDummyGO = &EffectDummyGameObj_spell_dummy_go;
 
-    pNewScript = new Script;
-    pNewScript->Name = "spell_dummy_npc";
-    pNewScript->pEffectDummyNPC = &EffectDummyCreature_spell_dummy_npc;
-    pNewScript->pEffectAuraDummy = &EffectAuraDummy_spell_aura_dummy_npc;
-    pNewScript->RegisterSelf();
+    s.newScript("spell_dummy_npc");
+    s->pEffectDummyNPC = &EffectDummyCreature_spell_dummy_npc;
+    s->pEffectAuraDummy = &EffectAuraDummy_spell_aura_dummy_npc;
 }

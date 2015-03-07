@@ -990,7 +990,7 @@ void instance_ulduar::SetData(uint32 uiType, uint32 uiData)
     }
 }
 
-bool instance_ulduar::CheckConditionCriteriaMeet(Player const* pPlayer, uint32 uiInstanceConditionId, WorldObject const* pConditionSource, uint32 conditionSourceType) const
+bool instance_ulduar::CheckConditionCriteriaMeet(Player const* pPlayer, uint32 uiInstanceConditionId, WorldObject const* pConditionSource, ConditionSource conditionSourceType) const
 {
     switch (uiInstanceConditionId)
     {

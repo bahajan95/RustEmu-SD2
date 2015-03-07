@@ -1,4 +1,4 @@
-/* This file is part of the ScriptDev2 Project. See AUTHORS file for Copyright information
+/* Copyright (C) 2006 - 2013 ScriptDev2 <http://www.scriptdev2.com/>
  * This program is free software licensed under GPL version 2
  * Please see the included DOCS/LICENSE.TXT for more information */
 
@@ -20,6 +20,7 @@ enum
 };
 
 FollowerAI::FollowerAI(Creature* pCreature) : ScriptedAI(pCreature),
+    m_leaderGuid(),
     m_uiUpdateFollowTimer(2500),
     m_uiFollowState(STATE_FOLLOW_NONE),
     m_pQuestForFollow(NULL)

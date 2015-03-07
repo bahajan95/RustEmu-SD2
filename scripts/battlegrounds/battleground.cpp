@@ -1,4 +1,4 @@
-/* This file is part of the ScriptDev2 Project. See AUTHORS file for Copyright information
+/* Copyright (C) 2006 - 2013 ScriptDev2 <http://www.scriptdev2.com/>
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
@@ -53,13 +53,16 @@ struct npc_spirit_guideAI : public ScriptedAI
         Reset();
     }
 
-    void Reset() override {}
+    void Reset() {}
 
     void UpdateAI(const uint32 /*uiDiff*/) override
     {
         // auto cast the whole time this spell
         if (!m_creature->GetCurrentSpell(CURRENT_CHANNELED_SPELL))
+        {
+            m_creature->CastSpell(m_creature, SPELL_SPIRIT_HEAL, true);
             m_creature->CastSpell(m_creature, SPELL_SPIRIT_HEAL_CHANNEL, false);
+        }
     }
 
     void CorpseRemoved(uint32&) override
@@ -104,11 +107,7 @@ CreatureAI* GetAI_npc_spirit_guide(Creature* pCreature)
 
 void AddSC_battleground()
 {
-    Script* pNewScript;
-
-    pNewScript = new Script;
-    pNewScript->Name = "npc_spirit_guide";
-    pNewScript->GetAI = &GetAI_npc_spirit_guide;
-    pNewScript->pGossipHello = &GossipHello_npc_spirit_guide;
-    pNewScript->RegisterSelf();
+    AutoScript s("npc_spirit_guide");
+    s->GetAI = &GetAI_npc_spirit_guide;
+    s->pGossipHello = &GossipHello_npc_spirit_guide;
 }

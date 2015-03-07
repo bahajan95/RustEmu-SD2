@@ -1,4 +1,4 @@
-/* This file is part of the ScriptDev2 Project. See AUTHORS file for Copyright information
+/* Copyright (C) 2006 - 2013 ScriptDev2 <http://www.scriptdev2.com/>
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
@@ -413,12 +413,7 @@ enum
     HORDE_COORDS                = 6
 };
 
-struct Location
-{
-    float x, y, z, o;
-};
-
-static Location AllianceCoords[] =
+static StaticLocation AllianceCoords[] =
 {
     { -3757.38f, -4533.05f, 14.16f, 3.62f},                 // Top-far-right bunk as seen from entrance
     { -3754.36f, -4539.13f, 14.16f, 5.13f},                 // Top-far-left bunk
@@ -434,7 +429,7 @@ static Location AllianceCoords[] =
 #define A_RUNTOY -4531.52f
 #define A_RUNTOZ 11.91f
 
-static Location HordeCoords[] =
+static StaticLocation HordeCoords[] =
 {
     { -1013.75f, -3492.59f, 62.62f, 4.34f},                 // Left, Behind
     { -1017.72f, -3490.92f, 62.62f, 4.34f},                 // Right, Behind
@@ -481,7 +476,7 @@ struct npc_doctorAI : public ScriptedAI
     bool m_bIsEventInProgress;
 
     GuidList m_lPatientGuids;
-    std::vector<Location*> m_vPatientSummonCoordinates;
+    std::vector<StaticLocation*> m_vPatientSummonCoordinates;
 
     void Reset() override
     {
@@ -501,8 +496,8 @@ struct npc_doctorAI : public ScriptedAI
     }
 
     void BeginEvent(Player* pPlayer);
-    void PatientDied(Location* pPoint);
-    void PatientSaved(Creature* pSoldier, Player* pPlayer, Location* pPoint);
+    void PatientDied(StaticLocation* pPoint);
+    void PatientSaved(Creature* pSoldier, Player* pPlayer, StaticLocation* pPoint);
     void UpdateAI(const uint32 uiDiff) override;
 };
 
@@ -515,7 +510,7 @@ struct npc_injured_patientAI : public ScriptedAI
     npc_injured_patientAI(Creature* pCreature) : ScriptedAI(pCreature) {Reset();}
 
     ObjectGuid m_doctorGuid;
-    Location* m_pCoord;
+    StaticLocation* m_pCoord;
 
     void Reset() override
     {
@@ -651,7 +646,7 @@ void npc_doctorAI::BeginEvent(Player* pPlayer)
     m_creature->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
 }
 
-void npc_doctorAI::PatientDied(Location* pPoint)
+void npc_doctorAI::PatientDied(StaticLocation* pPoint)
 {
     Player* pPlayer = m_creature->GetMap()->GetPlayer(m_playerGuid);
 
@@ -677,7 +672,7 @@ void npc_doctorAI::PatientDied(Location* pPoint)
         Reset();
 }
 
-void npc_doctorAI::PatientSaved(Creature* /*soldier*/, Player* pPlayer, Location* pPoint)
+void npc_doctorAI::PatientSaved(Creature* /*soldier*/, Player* pPlayer, StaticLocation* pPoint)
 {
     if (pPlayer && m_playerGuid == pPlayer->GetObjectGuid())
     {
@@ -719,7 +714,7 @@ void npc_doctorAI::UpdateAI(const uint32 uiDiff)
     {
         if (m_uiSummonPatientTimer < uiDiff)
         {
-            std::vector<Location*>::iterator itr = m_vPatientSummonCoordinates.begin() + urand(0, m_vPatientSummonCoordinates.size() - 1);
+            std::vector<StaticLocation*>::iterator itr = m_vPatientSummonCoordinates.begin() + urand(0, m_vPatientSummonCoordinates.size() - 1);
             uint32 patientEntry = 0;
 
             switch (m_creature->GetEntry())
@@ -1074,7 +1069,670 @@ bool GossipSelect_npc_innkeeper(Player* pPlayer, Creature* pCreature, uint32 /*u
     return true;
 }
 
+/*####
+ ## npc_snake_trap_serpents - Summonned snake id are 19921 and 19833
+ ####*/
+
+#define SPELL_MIND_NUMBING_POISON    25810   //Viper
+#define SPELL_CRIPPLING_POISON       30981   //Viper
+#define SPELL_DEADLY_POISON          34655   //Venomous Snake
+
+#define MOB_VIPER 19921
+#define MOB_VENOM_SNIKE 19833
+
+struct npc_snake_trap_serpentsAI : public ScriptedAI
+{
+    npc_snake_trap_serpentsAI(Creature *c) : ScriptedAI(c) {Reset();}
+
+    uint32 SpellTimer;
+    Unit* Owner;
+
+    void Reset() override
+    {
+        SpellTimer = 500;
+        Owner = m_creature->GetCharmerOrOwner();
+        if (!Owner) return;
+
+        m_creature->SetLevel(Owner->getLevel());
+        m_creature->setFaction(Owner->getFaction());
+    }
+
+    void AttackStart(Unit* pWho) override
+    {
+      if (!pWho) return;
+
+      if (m_creature->Attack(pWho, true))
+         {
+            m_creature->SetInCombatWith(pWho);
+            m_creature->AddThreat(pWho, 100.0f);
+            SetCombatMovement(true);
+            m_creature->GetMotionMaster()->MoveChase(pWho);
+         }
+    }
+
+    void UpdateAI(const uint32 diff) override
+    {
+        if (!m_creature->getVictim())
+        {
+            if (Owner && Owner->getVictim())
+                AttackStart(Owner->getVictim());
+            return;
+        }
+
+        if (SpellTimer <= diff)
+        {
+            if (m_creature->GetEntry() == MOB_VIPER ) //Viper - 19921
+            {
+                if (!urand(0,2)) //33% chance to cast
+                {
+                    uint32 spell;
+                    if (urand(0,1))
+                        spell = SPELL_MIND_NUMBING_POISON;
+                    else
+                        spell = SPELL_CRIPPLING_POISON;
+                    DoCast(m_creature->getVictim(), spell);
+                }
+
+                SpellTimer = urand(3000, 5000);
+            }
+            else if (m_creature->GetEntry() == MOB_VENOM_SNIKE ) //Venomous Snake - 19833
+            {
+                if (urand(0,1) == 0) //80% chance to cast
+                    DoCast(m_creature->getVictim(), SPELL_DEADLY_POISON);
+                SpellTimer = urand(2500, 4500);
+            }
+        }
+        else SpellTimer -= diff;
+
+        DoMeleeAttackIfReady();
+    }
+};
+
+CreatureAI* GetAI_npc_snake_trap_serpents(Creature* pCreature)
+{
+    return new npc_snake_trap_serpentsAI(pCreature);
+}
+
+struct npc_rune_blade : public ScriptedAI
+{
+    npc_rune_blade(Creature* pCreature) : ScriptedAI(pCreature) {Reset();}
+
+    Unit* owner;
+
+    void Reset() override
+    {
+        owner = m_creature->GetOwner();
+        if (!owner || owner->GetTypeId() != TYPEID_PLAYER)
+            return;
+
+        // Cannot be Selected or Attacked
+        m_creature->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
+        m_creature->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
+
+        m_creature->SetLevel(owner->getLevel());
+        m_creature->setFaction(owner->getFaction());
+
+        // Add visible weapon
+        if (Item const * item = ((Player *)owner)->GetItemByPos(INVENTORY_SLOT_BAG_0, EQUIPMENT_SLOT_MAINHAND))
+            m_creature->SetUInt32Value(UNIT_VIRTUAL_ITEM_SLOT_ID, item->GetProto()->ItemId);
+
+        // Add stats scaling
+        int32 damageDone=owner->CalculateDamage(BASE_ATTACK, true); // might be average damage instead ?
+        int32 meleeSpeed=owner->m_modAttackSpeedPct[BASE_ATTACK];
+        m_creature->CastCustomSpell(m_creature, 51906, &damageDone, &meleeSpeed, NULL, true);
+
+        // Visual Glow
+        m_creature->CastSpell(m_creature, 53160, true);
+
+        SetCombatMovement(true);
+    }
+
+    void UpdateAI(const uint32 /*diff*/) override
+    {
+        if (!owner) return;
+
+        if (!m_creature->getVictim())
+        {
+            if (owner->getVictim())
+                AttackStart(owner->getVictim());
+        }
+
+        DoMeleeAttackIfReady();
+    }
+};
+
+CreatureAI* GetAI_npc_rune_blade(Creature* pCreature)
+{
+    return new npc_rune_blade(pCreature);
+}
+
+/*########
+# npc_risen_ally AI
+#########*/
+
+struct npc_risen_allyAI : public ScriptedAI
+{
+    npc_risen_allyAI(Creature *pCreature) : ScriptedAI(pCreature)
+    {
+    }
+
+    uint32 StartTimer;
+
+    void Reset() override
+    {
+        StartTimer = 2000;
+        m_creature->SetSheath(SHEATH_STATE_MELEE);
+        m_creature->SetByteFlag(UNIT_FIELD_BYTES_2, 2, UNIT_CAN_BE_ABANDONED);
+        m_creature->SetUInt32Value(UNIT_FIELD_BYTES_0, 2048);
+        m_creature->SetUInt32Value(UNIT_FIELD_FLAGS, UNIT_FLAG_PVP_ATTACKABLE);
+        m_creature->SetUInt32Value(UNIT_NPC_FLAGS, UNIT_NPC_FLAG_NONE);
+        m_creature->SetFloatValue(UNIT_FIELD_COMBATREACH, 1.5f);
+        if (Player* creator = m_creature->GetMap()->GetPlayer(m_creature->GetCreatorGuid()))
+        {
+           m_creature->SetLevel(creator->getLevel());
+           m_creature->setFaction(creator->getFaction());
+        }
+    }
+
+    void JustDied(Unit* killer)
+    {
+        if (!m_creature)
+            return;
+
+        if (Player* creator = m_creature->GetMap()->GetPlayer(m_creature->GetCreatorGuid()))
+        {
+            creator->RemoveAurasDueToSpell(46619);
+            creator->RemoveAurasDueToSpell(62218);
+        }
+    }
+
+    void AttackStart(Unit* pWho) override
+    {
+        if (!pWho) return;
+
+        if (m_creature->Attack(pWho, true))
+        {
+            m_creature->SetInCombatWith(pWho);
+            pWho->SetInCombatWith(m_creature);
+            DoStartMovement(pWho, 10.0f);
+            SetCombatMovement(true);
+        }
+    }
+
+    void UpdateAI(const uint32 uiDiff) override
+    {
+        if(StartTimer > uiDiff)
+        {
+            StartTimer -= uiDiff;
+            return;
+        }
+
+        if(!m_creature->isCharmed())
+            m_creature->ForcedDespawn();
+
+        if (m_creature->isInCombat())
+            DoMeleeAttackIfReady();
+    }
+};
+
+CreatureAI* GetAI_npc_risen_ally(Creature* pCreature)
+{
+    return new npc_risen_allyAI(pCreature);
+}
+
+/*########
+# npc_explosive_decoyAI
+#########*/
+
+struct npc_explosive_decoyAI : public ScriptedAI
+{
+    npc_explosive_decoyAI(Creature *pCreature) : ScriptedAI(pCreature)
+    {
+        Reset();
+    }
+
+    Player* p_owner;
+
+    void Reset() override
+    {
+        p_owner = NULL;
+        SetCombatMovement(false);
+    }
+
+    void DamageTaken(Unit* pDoneBy, uint32& uiDamage) override
+    {
+        if (!m_creature || !m_creature->isAlive())
+            return;
+
+        if (uiDamage > 0)
+            m_creature->CastSpell(m_creature, 53273, true);
+    }
+
+    void JustDied(Unit* killer)
+    {
+        if (!m_creature || !p_owner)
+            return;
+
+        SpellEntry const* createSpell = GetSpellStore()->LookupEntry(m_creature->GetUInt32Value(UNIT_CREATED_BY_SPELL));
+
+        if (createSpell)
+            p_owner->SendCooldownEvent(createSpell);
+    }
+
+    void UpdateAI(const uint32 uiDiff) override
+    {
+        if (p_owner)
+            return;
+
+        p_owner = m_creature->GetMap()->GetPlayer(m_creature->GetCreatorGuid());
+
+        if (!p_owner)
+            return;
+
+        m_creature->setFaction(p_owner->getFaction());
+        m_creature->SetCreatorGuid(ObjectGuid());
+    }
+};
+
+CreatureAI* GetAI_npc_explosive_decoy(Creature* pCreature)
+{
+    return new npc_explosive_decoyAI(pCreature);
+}
+
+/*########
+# npc_eye_of_kilroggAI
+#########*/
+
+struct npc_eye_of_kilrogg : public ScriptedAI
+{
+    npc_eye_of_kilrogg(Creature* pCreature) : ScriptedAI(pCreature) {Reset();}
+
+    Player* p_owner;
+
+    void Reset() override
+    {
+        p_owner = NULL;
+    }
+
+    void UpdateAI(const uint32 /*diff*/) override
+    {
+        if (p_owner)
+            return;
+
+        p_owner = (Player*)m_creature->GetCharmerOrOwner();
+
+        if (!p_owner)
+            return;
+
+        if (!m_creature->HasAura(2585))
+            m_creature->CastSpell(m_creature, 2585, true);
+
+        if (p_owner->HasAura(58081))
+            m_creature->CastSpell(m_creature, 58083, true);
+
+    }
+};
+
+CreatureAI* GetAI_npc_eye_of_kilrogg(Creature* pCreature)
+{
+    return new npc_eye_of_kilrogg(pCreature);
+}
+
+/*########
+# npc_fire_bunny
+#########*/
+
+enum
+{
+    NPC_FIRE_BUNNY          = 23686,
+    SPELL_THROW_BUCKET      = 42339,
+    SPELL_EXTINGUISH_VISUAL = 42348,
+    SPELL_FLAMES_LARGE      = 42075,
+    SPELL_SMOKE             = 42355,
+    SPELL_CONFLAGRATE       = 42132,
+    SPELL_HORSEMAN_MOUNT    = 48024,
+    SPELL_HORSMAN_SHADE_VIS = 43904,
+    SPELL_Q_STOP_THE_FIRE   = 42242,
+    SPELL_Q_LET_THE_FIRES_C = 47775,
+    SPELL_LAUGH_DELAYED_8   = 43893,
+
+    PHASE_INITIAL           = 0,
+    PHASE_1ST_SPEACH        = 1,
+    PHASE_2ND_SPEACH        = 2,
+    PHASE_FAIL              = 3,
+    PHASE_END               = 4,
+
+    YELL_IGNITE             = -1110001,
+    YELL_1ST                = -1110002,
+    YELL_2ND                = -1110003,
+    YELL_FAIL               = -1110004,
+    YELL_VICTORY            = -1110005,
+    YELL_CONFLAGRATION      = -1110006
+};
+
+struct npc_horseman_fire_bunnyAI : public Scripted_NoMovementAI
+{
+    npc_horseman_fire_bunnyAI(Creature* pCreature) : Scripted_NoMovementAI(pCreature)
+    {
+        Reset();
+        m_creature->RemoveAllAuras();
+    }
+
+    void Reset() override
+    {
+        if (!m_creature->isAlive())
+            m_creature->Respawn();
+    }
+
+    void SpellHit(Unit* pWho, const SpellEntry* pSpell) override
+    {
+        if (pSpell->Id == SPELL_THROW_BUCKET)
+        {
+            pWho->CastSpell(m_creature, SPELL_EXTINGUISH_VISUAL, false);
+            m_creature->RemoveAurasDueToSpell(SPELL_FLAMES_LARGE);
+        }
+        if (pSpell->Id == SPELL_CONFLAGRATE)
+        {
+            DoCastSpellIfCan(m_creature, SPELL_FLAMES_LARGE);
+            m_creature->RemoveAurasDueToSpell(SPELL_CONFLAGRATE);
+        }
+    }
+
+    void UpdateAI(const uint32 uiDiff) override
+    {
+        if (m_creature->SelectHostileTarget() || m_creature->getVictim())
+            EnterEvadeMode(); // Dunno how to prevent them from entering combat while hit by SPELL_EXTINGUISH_VISUAL (spelleffect 2)
+    }
+};
+
+CreatureAI* GetAI_npc_horseman_fire_bunny(Creature* pCreature)
+{
+    return new npc_horseman_fire_bunnyAI (pCreature);
+};
+
+/*########
+# npc_shade of horseman
+#########*/
+
+struct npc_shade_of_horsemanAI : public ScriptedAI
+{
+    npc_shade_of_horsemanAI(Creature* pCreature) : ScriptedAI(pCreature){Reset();}
+
+    uint8 uiPhase;
+    uint32 m_uiEventTimer;
+    uint32 m_uiConflagrationTimer;
+    uint32 m_uiConflagrationProcTimer;
+    bool bIsConflagrating;
+
+    GuidList lFireBunnies;
+
+    void Reset() override
+    {
+        if (!m_creature->isAlive())
+            m_creature->Respawn();
+
+        uiPhase = PHASE_INITIAL;
+        lFireBunnies.clear();
+        bIsConflagrating = true;
+
+        m_uiEventTimer = 2.5*MINUTE*IN_MILLISECONDS;
+
+        m_uiConflagrationTimer = 30000;
+        m_uiConflagrationProcTimer = 2000;
+
+        DoCastSpellIfCan(m_creature, SPELL_HORSEMAN_MOUNT);
+        DoCastSpellIfCan(m_creature, SPELL_HORSMAN_SHADE_VIS);
+    }
+
+    void UpdateAI(const uint32 uiDiff) override
+    {
+        if (uiPhase == PHASE_INITIAL)
+        {
+            DoScriptText(YELL_IGNITE, m_creature);
+            ++uiPhase;
+            return;
+        }
+        else if (uiPhase == PHASE_END)
+            return;
+
+        if (!bIsConflagrating)
+        {
+            bool IsVictory = true;
+            for (GuidList::iterator itr = lFireBunnies.begin(); itr != lFireBunnies.end(); ++itr)
+                if (Creature* pFireBunny = m_creature->GetMap()->GetCreature(*itr))
+                    if (pFireBunny->HasAura(SPELL_FLAMES_LARGE))
+                        IsVictory = false;
+            if (IsVictory)
+            {
+                DoScriptText(YELL_VICTORY, m_creature);
+                DoCastSpellIfCan(m_creature, SPELL_Q_STOP_THE_FIRE, CAST_TRIGGERED);
+                DoCastSpellIfCan(m_creature, SPELL_Q_LET_THE_FIRES_C, CAST_TRIGGERED);
+                m_creature->ForcedDespawn(5000);
+                uiPhase = PHASE_END;
+                return;
+            }
+        }
+
+        if (m_uiEventTimer < uiDiff)
+        {
+            switch(uiPhase)
+            {
+                case PHASE_1ST_SPEACH:
+                    DoScriptText(YELL_1ST, m_creature);
+                    m_uiEventTimer = 2 *MINUTE*IN_MILLISECONDS;
+                    break;
+
+                case PHASE_2ND_SPEACH:
+                    DoScriptText(YELL_2ND, m_creature);
+                    m_uiEventTimer = 0.5 *MINUTE*IN_MILLISECONDS;
+                    break;
+                case PHASE_FAIL:
+                    DoScriptText(YELL_FAIL, m_creature);
+                    m_creature->ForcedDespawn(10000);
+                    for (GuidList::iterator itr = lFireBunnies.begin(); itr != lFireBunnies.end(); ++itr)
+                        if (Creature* pFireBunny = m_creature->GetMap()->GetCreature(*itr))
+                        {
+                            if (pFireBunny->HasAura(SPELL_FLAMES_LARGE))
+                                pFireBunny->RemoveAurasDueToSpell(SPELL_FLAMES_LARGE);
+                            pFireBunny->CastSpell(m_creature, SPELL_SMOKE, true);
+                            pFireBunny->ForcedDespawn(60000);
+                        }
+                    break;
+            }
+            ++uiPhase;
+            DoCastSpellIfCan(m_creature, SPELL_LAUGH_DELAYED_8);
+        }
+        else
+            m_uiEventTimer -= uiDiff;
+
+        if (m_uiConflagrationTimer < uiDiff)
+        {
+            bIsConflagrating = !bIsConflagrating;
+            m_creature->GetMotionMaster()->MovementExpired();
+            m_creature->GetMotionMaster()->MoveTargetedHome();
+            m_uiConflagrationProcTimer = 2000;
+            m_uiConflagrationTimer = bIsConflagrating ? 10000 : 30000;
+            if (bIsConflagrating)
+                DoScriptText(YELL_CONFLAGRATION, m_creature);
+        }
+        else
+            m_uiConflagrationTimer -= uiDiff;
+
+        if (bIsConflagrating)
+            if (m_uiConflagrationProcTimer < uiDiff)
+            {
+                m_uiConflagrationProcTimer = 2000;
+                if (lFireBunnies.empty())
+                {
+                    std::list<Creature*> tempFireBunnies;
+                    GetCreatureListWithEntryInGrid(tempFireBunnies, m_creature, NPC_FIRE_BUNNY, 50.0f);
+                    for (std::list<Creature*>::iterator itr = tempFireBunnies.begin(); itr != tempFireBunnies.end(); ++itr)
+                        lFireBunnies.push_back((*itr)->GetObjectGuid());
+                }
+
+                if (lFireBunnies.empty())
+                {
+                    m_creature->ForcedDespawn(5000);
+                    error_log("Missing DB spawns of Fire Bunnies (Horseman Village Event)");
+                    uiPhase = PHASE_END;
+                    return;
+                }
+
+                if (m_creature->GetMotionMaster()->GetCurrentMovementGeneratorType() == POINT_MOTION_TYPE)
+                    return;
+
+                for (GuidList::iterator itr = lFireBunnies.begin(); itr != lFireBunnies.end(); ++itr)
+                    if (Creature* pFireBunny = m_creature->GetMap()->GetCreature(*itr))
+                        if (!pFireBunny->HasAura(SPELL_FLAMES_LARGE))
+                        {
+                            if (DoCastSpellIfCan(pFireBunny, SPELL_CONFLAGRATE) != CAST_OK)
+                            {
+                                float x,y,z;
+                                pFireBunny->GetPosition(x,y,z);
+                                pFireBunny->GetClosePoint(x,y,z,0,5,0);
+                                m_creature->GetMotionMaster()->MovePoint(0, x,y,z+15);
+                                break;
+                            }
+                        }
+            }
+            else
+                m_uiConflagrationProcTimer -= uiDiff;
+    }
+};
+
+CreatureAI* GetAI_npc_shade_of_horseman(Creature* pCreature)
+{
+    return new npc_shade_of_horsemanAI (pCreature);
+};
+
+/*########
+npc_wild_turkey
+#########*/
+enum
+{
+    EMOTE_TURKEY_HUNTER              = -1730001,
+    EMOTE_TURKEY_DOMINATION          = -1730002,
+    EMOTE_TURKEY_SLAUGHTER           = -1730003,
+    EMOTE_TURKEY_TRIUMPH             = -1730004,
+
+    SPELL_TURKEY_TRACKER             = 62014,
+    SPELL_PH_KILL_COUNTER_VISUAL_MAX = 62021
+};
+struct npc_wild_turkeyAI : public ScriptedAI
+{
+    npc_wild_turkeyAI(Creature* pCreature) : ScriptedAI(pCreature)
+    {
+        m_creature->RemoveAllAuras();
+    }
+
+    void Reset() override {}
+
+    void UpdateAI(const uint32 uiDiff) override
+    {
+        DoMeleeAttackIfReady();
+    }
+
+    void JustDied(Unit* pKiller) override
+    {
+        if (pKiller && pKiller->GetTypeId() == TYPEID_PLAYER)
+        {
+            pKiller->CastSpell(pKiller, SPELL_TURKEY_TRACKER, true);
+            Aura * pAura = pKiller->GetAura(SPELL_TURKEY_TRACKER, EFFECT_INDEX_0);
+            if (pAura)
+            {
+                uint32 stacks = pAura->GetStackAmount();
+                switch (stacks)
+                {
+                    case 10:
+                    {
+                        DoScriptText(EMOTE_TURKEY_HUNTER, m_creature, pKiller);
+                        break;
+                    }
+                    case 20:
+                    {
+                        DoScriptText(EMOTE_TURKEY_DOMINATION, m_creature, pKiller);
+                        break;
+                    }
+                    case 30:
+                    {
+                        DoScriptText(EMOTE_TURKEY_SLAUGHTER, m_creature, pKiller);
+                        break;
+                    }
+                    case 40:
+                    {
+                        DoScriptText(EMOTE_TURKEY_TRIUMPH, m_creature, pKiller);
+                        pKiller->CastSpell(pKiller, SPELL_PH_KILL_COUNTER_VISUAL_MAX, true);
+                        break;
+                    }
+                    default: break;
+                }
+            }
+        }
+    }
+};
+
+CreatureAI* GetAI_npc_wild_turkey(Creature* pCreature)
+{
+    return new npc_wild_turkeyAI (pCreature);
+};
+
 /*######
+## npc_experience
+######*/
+
+#define EXP_COST                100000//10 00 00 copper (10golds)
+#define GOSSIP_TEXT_EXP         14736
+#define GOSSIP_XP_OFF           "I no longer wish to gain experience."
+#define GOSSIP_XP_ON            "I wish to start gaining experience again."
+
+bool GossipHello_npc_experience(Player* pPlayer, Creature* pCreature)
+{
+    pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, GOSSIP_XP_OFF, GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF+1);
+    pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, GOSSIP_XP_ON, GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF+2);
+    pPlayer->PlayerTalkClass->SendGossipMenu(GOSSIP_TEXT_EXP, pCreature->GetObjectGuid());
+    return true;
+}
+
+bool GossipSelect_npc_experience(Player* pPlayer, Creature* /*pCreature*/, uint32 /*uiSender*/, uint32 uiAction)
+{
+    bool noXPGain = pPlayer->HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_XP_USER_DISABLED);
+    bool doSwitch = false;
+
+    switch(uiAction)
+    {
+        case GOSSIP_ACTION_INFO_DEF + 1://xp off
+            {
+                if (!noXPGain)//does gain xp
+                    doSwitch = true;//switch to don't gain xp
+            }
+            break;
+        case GOSSIP_ACTION_INFO_DEF + 2://xp on
+            {
+                if (noXPGain)//doesn't gain xp
+                    doSwitch = true;//switch to gain xp
+            }
+            break;
+    }
+    if (doSwitch)
+    {
+        if (pPlayer->GetMoney() < EXP_COST)
+            pPlayer->SendBuyError(BUY_ERR_NOT_ENOUGHT_MONEY, 0, 0, 0);
+        else if (noXPGain)
+        {
+            pPlayer->ModifyMoney(-EXP_COST);
+            pPlayer->RemoveFlag(PLAYER_FLAGS, PLAYER_FLAGS_XP_USER_DISABLED);
+        }
+        else if (!noXPGain)
+        {
+            pPlayer->ModifyMoney(-EXP_COST);
+            pPlayer->SetFlag(PLAYER_FLAGS, PLAYER_FLAGS_XP_USER_DISABLED);
+        }
+    }
+    pPlayer->PlayerTalkClass->CloseGossip();
+    return true;
+}
+
+/*########
 ## npc_spring_rabbit
 ## ATTENTION: This is actually a "fun" script, entirely done without proper source!
 ######*/
@@ -1120,7 +1778,7 @@ struct npc_spring_rabbitAI : public ScriptedPetAI
         float m_fMoveAngle = m_creature->GetAngle(pPartner);
         float fDist = m_creature->GetDistance(pPartner);
         float fX, fY, fZ;
-        m_creature->GetNearPoint(m_creature, fX, fY, fZ, m_creature->GetObjectBoundingRadius(), fDist * 0.5f, m_fMoveAngle);
+        m_creature->GetNearPoint(m_creature, fX, fY, fZ, m_creature->GetObjectBoundingRadius(), fDist * 0.5f - m_creature->GetObjectBoundingRadius(), m_fMoveAngle);
 
         m_creature->GetMotionMaster()->Clear();
         m_creature->GetMotionMaster()->MovePoint(1, fX, fY, fZ);
@@ -1172,7 +1830,7 @@ struct npc_spring_rabbitAI : public ScriptedPetAI
             return false;
     }
 
-    void MovementInform(uint32 uiMovementType, uint32 uiData) override
+    void MovementInform(uint32 uiMovementType, uint32 uiData)
     {
         if (uiMovementType != POINT_MOTION_TYPE || uiData != 1)
             return;
@@ -1359,60 +2017,68 @@ bool EffectDummyCreature_npc_redemption_target(Unit* pCaster, uint32 uiSpellId, 
 
 void AddSC_npcs_special()
 {
-    Script* pNewScript;
+    AutoScript s;
 
-    pNewScript = new Script;
-    pNewScript->Name = "npc_air_force_bots";
-    pNewScript->GetAI = &GetAI_npc_air_force_bots;
-    pNewScript->RegisterSelf();
+    s.newScript("npc_air_force_bots");
+    s->GetAI = &GetAI_npc_air_force_bots;
 
-    pNewScript = new Script;
-    pNewScript->Name = "npc_chicken_cluck";
-    pNewScript->GetAI = &GetAI_npc_chicken_cluck;
-    pNewScript->pQuestAcceptNPC =   &QuestAccept_npc_chicken_cluck;
-    pNewScript->pQuestRewardedNPC = &QuestRewarded_npc_chicken_cluck;
-    pNewScript->RegisterSelf();
+    s.newScript("npc_chicken_cluck");
+    s->GetAI = &GetAI_npc_chicken_cluck;
+    s->pQuestAcceptNPC = &QuestAccept_npc_chicken_cluck;
+    s->pQuestRewardedNPC = &QuestRewarded_npc_chicken_cluck;
 
-    pNewScript = new Script;
-    pNewScript->Name = "npc_dancing_flames";
-    pNewScript->GetAI = &GetAI_npc_dancing_flames;
-    pNewScript->RegisterSelf();
+    s.newScript("npc_dancing_flames");
+    s->GetAI = &GetAI_npc_dancing_flames;
 
-    pNewScript = new Script;
-    pNewScript->Name = "npc_injured_patient";
-    pNewScript->GetAI = &GetAI_npc_injured_patient;
-    pNewScript->RegisterSelf();
+    s.newScript("npc_injured_patient");
+    s->GetAI = &GetAI_npc_injured_patient;
 
-    pNewScript = new Script;
-    pNewScript->Name = "npc_doctor";
-    pNewScript->GetAI = &GetAI_npc_doctor;
-    pNewScript->pQuestAcceptNPC = &QuestAccept_npc_doctor;
-    pNewScript->RegisterSelf();
+    s.newScript("npc_doctor");
+    s->GetAI = &GetAI_npc_doctor;
+    s->pQuestAcceptNPC = &QuestAccept_npc_doctor;
 
-    pNewScript = new Script;
-    pNewScript->Name = "npc_garments_of_quests";
-    pNewScript->GetAI = &GetAI_npc_garments_of_quests;
-    pNewScript->RegisterSelf();
+    s.newScript("npc_garments_of_quests");
+    s->GetAI = &GetAI_npc_garments_of_quests;
 
-    pNewScript = new Script;
-    pNewScript->Name = "npc_guardian";
-    pNewScript->GetAI = &GetAI_npc_guardian;
-    pNewScript->RegisterSelf();
+    s.newScript("npc_guardian");
+    s->GetAI = &GetAI_npc_guardian;
 
-    pNewScript = new Script;
-    pNewScript->Name = "npc_innkeeper";
-    pNewScript->pGossipHello = &GossipHello_npc_innkeeper;
-    pNewScript->pGossipSelect = &GossipSelect_npc_innkeeper;
-    pNewScript->RegisterSelf(false);                        // script and error report disabled, but script can be used for custom needs, adding ScriptName
+    s.newScript("npc_innkeeper", false);  // script and error report disabled, but script can be used for custom needs, adding ScriptName
+    s->pGossipHello = &GossipHello_npc_innkeeper;
+    s->pGossipSelect = &GossipSelect_npc_innkeeper;
 
-    pNewScript = new Script;
-    pNewScript->Name = "npc_spring_rabbit";
-    pNewScript->GetAI = &GetAI_npc_spring_rabbit;
-    pNewScript->RegisterSelf();
+    s.newScript("npc_snake_trap_serpents");
+    s->GetAI = &GetAI_npc_snake_trap_serpents;
 
-    pNewScript = new Script;
-    pNewScript->Name = "npc_redemption_target";
-    pNewScript->GetAI = &GetAI_npc_redemption_target;
-    pNewScript->pEffectDummyNPC = &EffectDummyCreature_npc_redemption_target;
-    pNewScript->RegisterSelf();
+    s.newScript("npc_runeblade");
+    s->GetAI = &GetAI_npc_rune_blade;
+
+    s.newScript("npc_risen_ally");
+    s->GetAI = &GetAI_npc_risen_ally;
+
+    s.newScript("npc_explosive_decoy");
+    s->GetAI = &GetAI_npc_explosive_decoy;
+
+    s.newScript("npc_eye_of_kilrogg");
+    s->GetAI = &GetAI_npc_eye_of_kilrogg;
+
+    s.newScript("npc_horseman_fire_bunny");
+    s->GetAI = &GetAI_npc_horseman_fire_bunny;
+
+    s.newScript("npc_shade_of_horseman");
+    s->GetAI = &GetAI_npc_shade_of_horseman;
+
+    s.newScript("npc_wild_turkey");
+    s->GetAI = &GetAI_npc_wild_turkey;
+
+    s.newScript("npc_experience");
+    s->pGossipHello = &GossipHello_npc_experience;
+    s->pGossipSelect = &GossipSelect_npc_experience;
+
+    s.newScript("npc_spring_rabbit");
+    s->GetAI = &GetAI_npc_spring_rabbit;
+
+    s.newScript("npc_redemption_target");
+    s->GetAI = &GetAI_npc_redemption_target;
+    s->pEffectDummyNPC = &EffectDummyCreature_npc_redemption_target;
 }

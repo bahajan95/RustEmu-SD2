@@ -1,4 +1,4 @@
-/* This file is part of the ScriptDev2 Project. See AUTHORS file for Copyright information
+/* Copyright (C) 2006 - 2013 ScriptDev2 <http://www.scriptdev2.com/>
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
@@ -31,7 +31,7 @@ struct world_map_eastern_kingdoms : public ScriptedMap
 {
     world_map_eastern_kingdoms(Map* pMap) : ScriptedMap(pMap) {}
 
-    void OnCreatureCreate(Creature* pCreature)
+    void OnCreatureCreate(Creature* pCreature) override
     {
         switch (pCreature->GetEntry())
         {
@@ -61,18 +61,18 @@ struct world_map_kalimdor : public ScriptedMap
 
     uint8 m_uiMurkdeepAdds_KilledAddCount;
 
-    void Initialize()
+    void Initialize() override
     {
         m_uiMurkdeepAdds_KilledAddCount = 0;
     }
 
-    void OnCreatureCreate(Creature* pCreature)
+    void OnCreatureCreate(Creature* pCreature) override
     {
         if (pCreature->GetEntry() == NPC_MURKDEEP)
             m_mNpcEntryGuidStore[NPC_MURKDEEP] = pCreature->GetObjectGuid();
     }
 
-    void OnCreatureDeath(Creature* pCreature)
+    void OnCreatureDeath(Creature* pCreature) override
     {
         switch (pCreature->GetEntry())
         {
@@ -146,18 +146,18 @@ struct world_map_outland : public ScriptedMap
 
     uint8 m_uiEmissaryOfHate_KilledAddCount;
 
-    void Initialize()
+    void Initialize() override
     {
         m_uiEmissaryOfHate_KilledAddCount = 0;
     }
 
-    void OnCreatureCreate(Creature* pCreature)
+    void OnCreatureCreate(Creature* pCreature) override
     {
         if (pCreature->GetEntry() == NPC_EMISSARY_OF_HATE)
             m_mNpcEntryGuidStore[NPC_EMISSARY_OF_HATE] = pCreature->GetObjectGuid();
     }
 
-    void OnCreatureDeath(Creature* pCreature)
+    void OnCreatureDeath(Creature* pCreature) override
     {
         switch (pCreature->GetEntry())
         {
@@ -201,25 +201,17 @@ InstanceData* GetInstanceData_world_map_northrend(Map* pMap)
 
 void AddSC_world_map_scripts()
 {
-    Script* pNewScript;
+    AutoScript s;
 
-    pNewScript = new Script;
-    pNewScript->Name = "world_map_eastern_kingdoms";
-    pNewScript->GetInstanceData = &GetInstanceData_world_map_eastern_kingdoms;
-    pNewScript->RegisterSelf();
+    s.newScript("world_map_eastern_kingdoms");
+    s->GetInstanceData = &GetInstanceData_world_map_eastern_kingdoms;
 
-    pNewScript = new Script;
-    pNewScript->Name = "world_map_kalimdor";
-    pNewScript->GetInstanceData = &GetInstanceData_world_map_kalimdor;
-    pNewScript->RegisterSelf();
+    s.newScript("world_map_kalimdor");
+    s->GetInstanceData = &GetInstanceData_world_map_kalimdor;
 
-    pNewScript = new Script;
-    pNewScript->Name = "world_map_outland";
-    pNewScript->GetInstanceData = &GetInstanceData_world_map_outland;
-    pNewScript->RegisterSelf();
+    s.newScript("world_map_outland");
+    s->GetInstanceData = &GetInstanceData_world_map_outland;
 
-    pNewScript = new Script;
-    pNewScript->Name = "world_map_northrend";
-    pNewScript->GetInstanceData = &GetInstanceData_world_map_northrend;
-    pNewScript->RegisterSelf();
+    s.newScript("world_map_northrend");
+    s->GetInstanceData = &GetInstanceData_world_map_northrend;
 }

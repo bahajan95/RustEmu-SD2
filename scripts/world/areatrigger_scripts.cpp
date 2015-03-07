@@ -1,4 +1,4 @@
-/* This file is part of the ScriptDev2 Project. See AUTHORS file for Copyright information
+/* Copyright (C) 2006 - 2013 ScriptDev2 <http://www.scriptdev2.com/>
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
@@ -17,7 +17,7 @@
 /* ScriptData
 SDName: Areatrigger_Scripts
 SD%Complete: 100
-SDComment: Quest support: 4291, 6681, 7632, 10589/10604, 11686, 12548, 12575, 12741, 13315/13351, 24849/24851.
+SDComment: Quest support: 4291, 6681, 10589/10604, 11686, 12548, 12575, 12741, 13315/13351, 24849/24851.
 SDCategory: Areatrigger
 EndScriptData */
 
@@ -33,7 +33,6 @@ at_childrens_week_spot          3546,3547,3548,3552,3549,3550
 at_scent_larkorwi               1726,1727,1728,1729,1730,1731,1732,1733,1734,1735,1736,1737,1738,1739,1740
 at_murkdeep                     1966
 at_hot_on_the_trail             5710, 5711, 5712, 5714, 5715, 5716
-at_ancient_leaf                 3587
 EndContentData */
 
 #include "precompiled.h"
@@ -365,119 +364,43 @@ bool AreaTrigger_at_hot_on_the_trail(Player* pPlayer, AreaTriggerEntry const* pA
     return false;
 }
 
-/*######
-## at_ancient_leaf
-######*/
-
-enum
-{
-    QUEST_ANCIENT_LEAF              = 7632,
-
-    NPC_VARTRUS                     = 14524,
-    NPC_STOMA                       = 14525,
-    NPC_HASTAT                      = 14526,
-
-    MAX_ANCIENTS                    = 3,
-};
-
-struct AncientSpawn
-{
-    uint32 uiEntry;
-    float fX, fY, fZ, fO;
-};
-
-static const AncientSpawn afSpawnLocations[MAX_ANCIENTS] =
-{
-    { NPC_VARTRUS, 6204.051758f, -1172.575684f, 370.079224f, 0.86052f },    // Vartus the Ancient
-    { NPC_STOMA,   6246.953613f, -1155.985718f, 366.182953f, 2.90269f },    // Stoma the Ancient
-    { NPC_HASTAT,  6193.449219f, -1137.834106f, 366.260529f, 5.77332f },    // Hastat the Ancient
-};
-
-bool AreaTrigger_at_ancient_leaf(Player* pPlayer, AreaTriggerEntry const* pAt)
-{
-    if (pPlayer->isGameMaster() || !pPlayer->isAlive())
-        return false;
-
-    // Handle Call Ancients event start - The area trigger summons 3 ancients
-    if (pPlayer->GetQuestStatus(QUEST_ANCIENT_LEAF) == QUEST_STATUS_COMPLETE)
-    {
-        // If ancients are already spawned, skip the rest
-        if (GetClosestCreatureWithEntry(pPlayer, NPC_VARTRUS, 50.0f) || GetClosestCreatureWithEntry(pPlayer, NPC_STOMA, 50.0f) || GetClosestCreatureWithEntry(pPlayer, NPC_HASTAT, 50.0f))
-            return true;
-
-        for (uint8 i = 0; i < MAX_ANCIENTS; ++i)
-            pPlayer->SummonCreature(afSpawnLocations[i].uiEntry, afSpawnLocations[i].fX, afSpawnLocations[i].fY, afSpawnLocations[i].fZ, afSpawnLocations[i].fO, TEMPSUMMON_TIMED_DESPAWN, 5 * MINUTE * IN_MILLISECONDS);
-    }
-
-    return false;
-}
-
 void AddSC_areatrigger_scripts()
 {
-    Script* pNewScript;
+    AutoScript s;
 
-    pNewScript = new Script;
-    pNewScript->Name = "at_childrens_week_spot";
-    pNewScript->pAreaTrigger = &AreaTrigger_at_childrens_week_spot;
-    pNewScript->RegisterSelf();
+    s.newScript("at_childrens_week_spot");
+    s->pAreaTrigger = &AreaTrigger_at_childrens_week_spot;
 
-    pNewScript = new Script;
-    pNewScript->Name = "at_aldurthar_gate";
-    pNewScript->pAreaTrigger = &AreaTrigger_at_aldurthar_gate;
-    pNewScript->RegisterSelf();
+    s.newScript("at_aldurthar_gate");
+    s->pAreaTrigger = &AreaTrigger_at_aldurthar_gate;
 
-    pNewScript = new Script;
-    pNewScript->Name = "at_coilfang_waterfall";
-    pNewScript->pAreaTrigger = &AreaTrigger_at_coilfang_waterfall;
-    pNewScript->RegisterSelf();
+    s.newScript("at_coilfang_waterfall");
+    s->pAreaTrigger = &AreaTrigger_at_coilfang_waterfall;
 
-    pNewScript = new Script;
-    pNewScript->Name = "at_legion_teleporter";
-    pNewScript->pAreaTrigger = &AreaTrigger_at_legion_teleporter;
-    pNewScript->RegisterSelf();
+    s.newScript("at_legion_teleporter");
+    s->pAreaTrigger = &AreaTrigger_at_legion_teleporter;
 
-    pNewScript = new Script;
-    pNewScript->Name = "at_ravenholdt";
-    pNewScript->pAreaTrigger = &AreaTrigger_at_ravenholdt;
-    pNewScript->RegisterSelf();
+    s.newScript("at_ravenholdt");
+    s->pAreaTrigger = &AreaTrigger_at_ravenholdt;
 
-    pNewScript = new Script;
-    pNewScript->Name = "at_spearborn_encampment";
-    pNewScript->pAreaTrigger = &AreaTrigger_at_spearborn_encampment;
-    pNewScript->RegisterSelf();
+    s.newScript("at_spearborn_encampment");
+    s->pAreaTrigger = &AreaTrigger_at_spearborn_encampment;
 
-    pNewScript = new Script;
-    pNewScript->Name = "at_warsong_farms";
-    pNewScript->pAreaTrigger = &AreaTrigger_at_warsong_farms;
-    pNewScript->RegisterSelf();
+    s.newScript("at_warsong_farms");
+    s->pAreaTrigger = &AreaTrigger_at_warsong_farms;
 
-    pNewScript = new Script;
-    pNewScript->Name = "at_waygate";
-    pNewScript->pAreaTrigger = &AreaTrigger_at_waygate;
-    pNewScript->RegisterSelf();
+    s.newScript("at_waygate");
+    s->pAreaTrigger = &AreaTrigger_at_waygate;
 
-    pNewScript = new Script;
-    pNewScript->Name = "at_stormwright_shelf";
-    pNewScript->pAreaTrigger = &AreaTrigger_at_stormwright_shelf;
-    pNewScript->RegisterSelf();
+    s.newScript("at_stormwright_shelf");
+    s->pAreaTrigger = &AreaTrigger_at_stormwright_shelf;
 
-    pNewScript = new Script;
-    pNewScript->Name = "at_scent_larkorwi";
-    pNewScript->pAreaTrigger = &AreaTrigger_at_scent_larkorwi;
-    pNewScript->RegisterSelf();
+    s.newScript("at_scent_larkorwi");
+    s->pAreaTrigger = &AreaTrigger_at_scent_larkorwi;
 
-    pNewScript = new Script;
-    pNewScript->Name = "at_murkdeep";
-    pNewScript->pAreaTrigger = &AreaTrigger_at_murkdeep;
-    pNewScript->RegisterSelf();
+    s.newScript("at_murkdeep");
+    s->pAreaTrigger = &AreaTrigger_at_murkdeep;
 
-    pNewScript = new Script;
-    pNewScript->Name = "at_hot_on_the_trail";
-    pNewScript->pAreaTrigger = &AreaTrigger_at_hot_on_the_trail;
-    pNewScript->RegisterSelf();
-
-    pNewScript = new Script;
-    pNewScript->Name = "at_ancient_leaf";
-    pNewScript->pAreaTrigger = &AreaTrigger_at_ancient_leaf;
-    pNewScript->RegisterSelf();
+    s.newScript("at_hot_on_the_trail");
+    s->pAreaTrigger = &AreaTrigger_at_hot_on_the_trail;
 }

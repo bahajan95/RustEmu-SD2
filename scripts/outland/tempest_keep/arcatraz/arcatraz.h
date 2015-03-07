@@ -58,11 +58,6 @@ enum
     SPELL_TARGET_OMEGA              = 36852,                // Visual spell used by Mellichar
 };
 
-struct SpawnLocation
-{
-    float m_fX, m_fY, m_fZ, m_fO;
-};
-
 static const SpawnLocation aSummonPosition[5] =
 {
     {478.326f, -148.505f, 42.56f, 3.19f},                   // Trickster or Phase Hunter

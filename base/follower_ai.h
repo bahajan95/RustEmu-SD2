@@ -1,4 +1,4 @@
-/* This file is part of the ScriptDev2 Project. See AUTHORS file for Copyright information
+/* Copyright (C) 2006 - 2013 ScriptDev2 <http://www.scriptdev2.com/>
  * This program is free software licensed under GPL version 2
  * Please see the included DOCS/LICENSE.TXT for more information */
 
@@ -22,7 +22,7 @@ class FollowerAI : public ScriptedAI
         explicit FollowerAI(Creature* pCreature);
         ~FollowerAI() {}
 
-        // virtual void WaypointReached(uint32 uiPointId) = 0;
+        // virtual void WaypointReached(uint32 uiPointId) = 0 override;
 
         void MovementInform(uint32 uiMotionType, uint32 uiPointId) override;
 

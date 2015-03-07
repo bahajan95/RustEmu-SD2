@@ -1,4 +1,4 @@
-/* This file is part of the ScriptDev2 Project. See AUTHORS file for Copyright information
+/* Copyright (C) 2013 /dev/rsa for ScriptDev2 <http://www.scriptdev2.com/>
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
@@ -16,54 +16,39 @@
 
 /* ScriptData
 SDName: boss_baltharus
-SD%Complete: 90
-SDComment: intro channeled spell NYI.
+SD%Complete: 90%
+SDComment: by notagain && /dev/rsa && carlos93
 SDCategory: Ruby Sanctum
 EndScriptData */
 
 #include "precompiled.h"
 #include "ruby_sanctum.h"
 
-enum
+static Location SpawnLoc[]=
 {
-    // Xerestrasza intro and outro texts
-    SAY_HELP                    = -1724000,
-    SAY_INTRO                   = -1724001,
-
-    SAY_THANKS                  = -1724002,
-    SAY_OUTRO_1                 = -1724003,
-    SAY_OUTRO_2                 = -1724004,
-    SAY_OUTRO_3                 = -1724005,
-    SAY_OUTRO_4                 = -1724006,
-    SAY_OUTRO_5                 = -1724007,
-    SAY_OUTRO_6                 = -1724008,
-    SAY_OUTRO_7                 = -1724009,
-
-    // Baltharus texts
-    SAY_AGGRO                   = -1724010,
-    SAY_SLAY_1                  = -1724011,
-    SAY_SLAY_2                  = -1724012,
-    SAY_DEATH                   = -1724013,
-    SAY_SPLIT                   = -1724014,
-
-    SPELL_BARRIER_CHANNEL       = 76221,            // channeled on the tree
-    SPELL_BLADE_TEMPEST         = 75125,
-    SPELL_CLEAVE                = 40504,
-    SPELL_ENERVATING_BRAND      = 74502,
-    SPELL_REPELLING_WAVE        = 74509,
-    SPELL_ENERVATING_BRAND_PL   = 74505,            // spell triggerd on players by 74502
-    SPELL_SIPHONED_MIGHT        = 74507,            // spell triggered on boss by 74505
-    SPELL_SUMMON_CLONE          = 74511,            // summons 39899
-    SPELL_SIMPLE_TELEPORT       = 64195,            // spell id not confirmed
-
-    NPC_BALTHARUS_CLONE         = 39899,
+    {3152.329834f, 359.41757f, 85.301605f},    // Baltharus target point
+    {3153.06f, 389.486f, 86.2596f},            // Baltharus initial point
 };
 
-static const DialogueEntry aIntroDialogue[] =
+enum Says
 {
-    {SAY_HELP,  NPC_XERESTRASZA,  7000},
-    {SAY_INTRO, NPC_BALTHARUS,    0},
-    {0, 0, 0},
+    //SAY_BALTHARUS_INTRO             = -1724001,
+    SAY_BALTHARUS_AGGRO             = -1724010,
+    SAY_BALTHARUS_SLAY_1            = -1724011,
+    SAY_BALTHARUS_SLAY_2            = -1724012,
+    SAY_BALTHARUS_DEATH             = -1724013,
+    SAY_BALTHARUS_SPLIT             = -1724014,
+    SAY_BALTHARUS_YELL              = -1666305,
+};
+
+enum BossSpells
+{
+    SPELL_BLADE_TEMPEST             = 75125, // every 22 secs
+    SPELL_ENERVATING_BRAND          = 74502, // friendlys in 12yards = 74505
+    SPELL_REPELLING_WAVE            = 74509, // once if call clone
+    SPELL_SABER_LASH                = 40504, // every 10-15 secs
+    SPELL_SUMMON_CLONE              = 74511, // summons npc 39899 (Clone)
+    SPELL_CHANNEL_SPELL             = 76221, // Channeling dummy spell
 };
 
 /*######
@@ -72,221 +57,268 @@ static const DialogueEntry aIntroDialogue[] =
 
 struct boss_baltharusAI : public ScriptedAI
 {
-    boss_baltharusAI(Creature* pCreature) : ScriptedAI(pCreature),
-        m_introDialogue(aIntroDialogue)
+    boss_baltharusAI(Creature* pCreature) : ScriptedAI(pCreature)
     {
-        m_pInstance = (instance_ruby_sanctum*)pCreature->GetInstanceData();
-        m_introDialogue.InitializeDialogueHelper(m_pInstance);
-
-        // Health check percent depends on difficulty
-        if (m_pInstance)
-            m_fHealthPercentCheck = m_pInstance->Is25ManDifficulty() ? 33.3f : 50;
-        else
-            script_error_log("Instance Ruby Sanctum: ERROR Failed to load instance data for this instace.");
-
-        m_bHasDoneIntro = false;
+        m_pInstance = (ScriptedInstance*)pCreature->GetInstanceData();
+        m_uiMapDifficulty = pCreature->GetMap()->GetDifficulty();
+        m_bIsHeroic = m_uiMapDifficulty > RAID_DIFFICULTY_25MAN_NORMAL;
+        m_bIs25Man = (m_uiMapDifficulty == RAID_DIFFICULTY_25MAN_NORMAL || m_uiMapDifficulty == RAID_DIFFICULTY_25MAN_HEROIC);
         Reset();
     }
 
-    instance_ruby_sanctum* m_pInstance;
-    DialogueHelper m_introDialogue;
-
-    bool m_bHasDoneIntro;
-
-    uint8 m_uiPhase;
-    float m_fHealthPercentCheck;
-
+    ScriptedInstance *m_pInstance;
+    Difficulty m_uiMapDifficulty;
+    Creature* pDummyTarget;
+    Creature* pClone;
+    bool m_bInCombat;
+    bool m_bIntro;
+    bool m_bIs25Man;
+    bool m_bIsHeroic;
+    uint32 m_uiStage;
     uint32 m_uiBladeTempestTimer;
     uint32 m_uiEnervatingBrandTimer;
-    uint32 m_uiCleaveTimer;
-    uint32 m_uiSummonCloneTimer;
+    uint32 m_uiSaberLashTimer;
 
-    void Reset() override
+    void Reset()
     {
-        m_uiPhase                   = 1;
-        m_uiSummonCloneTimer        = 0;
-        m_uiBladeTempestTimer       = 15000;
-        m_uiEnervatingBrandTimer    = 14000;
-        m_uiCleaveTimer             = urand(10000, 12000);
-    }
-
-    void Aggro(Unit* /*pWho*/) override
-    {
-        DoScriptText(SAY_AGGRO, m_creature);
-
-        if (m_pInstance)
-            m_pInstance->SetData(TYPE_BALTHARUS, IN_PROGRESS);
-    }
-
-    void MoveInLineOfSight(Unit* pWho) override
-    {
-        if (!m_bHasDoneIntro && pWho->GetTypeId() == TYPEID_PLAYER && !((Player*)pWho)->isGameMaster())
-        {
-            m_introDialogue.StartNextDialogueText(SAY_HELP);
-            m_bHasDoneIntro = true;
-        }
-
-        ScriptedAI::MoveInLineOfSight(pWho);
-    }
-
-    void KilledUnit(Unit* pVictim) override
-    {
-        if (pVictim->GetTypeId() != TYPEID_PLAYER)
+        if (!m_pInstance)
             return;
 
-        if (urand(0, 1))
-            DoScriptText(urand(0, 1) ? SAY_SLAY_1 : SAY_SLAY_2, m_creature);
-    }
+        if (m_creature->isAlive())
+            m_pInstance->SetData(TYPE_BALTHARUS, NOT_STARTED);
 
-    void JustDied(Unit* /*pKiller*/) override
-    {
-        DoScriptText(SAY_DEATH, m_creature);
+        m_creature->SetRespawnDelay(7*DAY);
+        pClone = NULL;
+        m_uiStage = 0;
+        m_uiBladeTempestTimer = 22000;
+        m_uiEnervatingBrandTimer = 10000;
+        m_uiSaberLashTimer = 5000;
+        m_bInCombat = false;
+        m_bIntro = false;
+        pDummyTarget = m_pInstance->GetSingleCreatureFromStorage(NPC_BALTHARUS_TARGET);
+        if (pDummyTarget)
+        {
+            if (!pDummyTarget->isAlive())
+                pDummyTarget->Respawn();
 
-        if (m_pInstance)
-            m_pInstance->SetData(TYPE_BALTHARUS, DONE);
+            pDummyTarget->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
+            pDummyTarget->GetMotionMaster()->MoveIdle();
+        }
+        else
+        {
+            pDummyTarget = m_creature->SummonCreature(NPC_BALTHARUS_TARGET, SpawnLoc[0].x, SpawnLoc[0].y, SpawnLoc[0].z, 0.0f, TEMPSUMMON_MANUAL_DESPAWN, 1000);
+            if (pDummyTarget)
+            {
+                pDummyTarget->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
+                pDummyTarget->GetMotionMaster()->MoveIdle();
+            }
+        }
+
+        if (Creature* pTarget = m_pInstance->GetSingleCreatureFromStorage(NPC_XERESTRASZA))
+            m_creature->SetGuidValue(UNIT_FIELD_TARGET, pTarget->GetObjectGuid());
     }
 
     void JustReachedHome() override
     {
-        if (m_pInstance)
-            m_pInstance->SetData(TYPE_BALTHARUS, FAIL);
+        if (!m_pInstance)
+            return;
+
+        m_pInstance->SetData(TYPE_BALTHARUS, FAIL);
     }
 
-    void JustSummoned(Creature* pSummoned)
+    void MoveInLineOfSight(Unit* pWho) override
     {
-        if (pSummoned->GetEntry() == NPC_BALTHARUS_CLONE)
+        ScriptedAI::MoveInLineOfSight(pWho);
+
+        if (!m_pInstance || m_bIntro || pWho->GetTypeId() != TYPEID_PLAYER || !pWho->IsWithinDistInMap(m_creature, 60.0f))
+            return;
+
+        m_pInstance->SetData(TYPE_EVENT, 10);
+        DoScriptText(SAY_BALTHARUS_YELL,m_creature);
+        m_bIntro = true;
+    }
+
+    void JustDied(Unit* pKiller) override
+    {
+        if (!m_pInstance)
+            return;
+
+        DoScriptText(SAY_BALTHARUS_DEATH,m_creature);
+        m_pInstance->SetData(TYPE_BALTHARUS, DONE);
+    }
+
+    void KilledUnit(Unit* pVictim) override
+    {
+        DoScriptText(SAY_BALTHARUS_SLAY_1 - urand(0,1),m_creature,pVictim);
+    }
+
+    void JustSummoned(Creature* pSummoned) override
+    {
+        if (!m_pInstance || !pSummoned)
+            return;
+
+        if (pSummoned->GetEntry() != NPC_BALTHARUS_TARGET )
         {
-            pSummoned->CastSpell(pSummoned, SPELL_SIMPLE_TELEPORT, true);
-            pSummoned->SetInCombatWithZone();
+            if (!pClone)
+                pClone = pSummoned;
+            else if (!pClone->isAlive())
+                pClone = pSummoned;
+
+            pClone->SetInCombatWithZone();
         }
     }
 
-    void SpellHitTarget(Unit* pTarget, SpellEntry const* pSpellEntry) override
+    void SummonedCreatureJustDied(Creature* pSummoned)
     {
-        if (pTarget->GetTypeId() == TYPEID_PLAYER && pSpellEntry->Id == SPELL_ENERVATING_BRAND_PL)
-            pTarget->CastSpell(m_creature, SPELL_SIPHONED_MIGHT, true);
+        if (!m_pInstance || !pSummoned)
+            return;
+
+        if (pSummoned == pClone)
+            pClone = NULL;
+    }
+
+    void Aggro(Unit* pWho)
+    {
+        if (!m_pInstance)
+            return;
+
+        if (pWho->GetTypeId() != TYPEID_PLAYER)
+            return;
+
+        if (pDummyTarget)
+            pDummyTarget->ForcedDespawn();
+
+        m_bInCombat = true;
+        m_creature->InterruptNonMeleeSpells(true);
+        SetCombatMovement(true);
+        m_pInstance->SetData(TYPE_BALTHARUS, IN_PROGRESS);
+        DoScriptText(SAY_BALTHARUS_AGGRO,m_creature);
+    }
+
+    void DamageTaken(Unit* pDoneBy, uint32& uiDamage) override
+    {
+        if (!m_pInstance)
+            return;
+
+        if (!m_creature || !m_creature->isAlive())
+            return;
+
+        if (pClone && pClone->isAlive())
+            uiDamage = 0;
     }
 
     void UpdateAI(const uint32 uiDiff) override
     {
-        m_introDialogue.DialogueUpdate(uiDiff);
+        if (!m_pInstance)
+            return;
+
+        if (!m_bInCombat && !m_creature->IsNonMeleeSpellCasted(false))
+            m_creature->CastSpell(pDummyTarget, SPELL_CHANNEL_SPELL, false);
 
         if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
             return;
 
-        if (m_creature->GetHealthPercent() < 100 - m_fHealthPercentCheck * m_uiPhase)
+        switch (m_uiStage)
         {
-            if (DoCastSpellIfCan(m_creature, SPELL_REPELLING_WAVE, CAST_INTERRUPT_PREVIOUS) == CAST_OK)
-            {
-                m_uiSummonCloneTimer = 3000;
-                ++m_uiPhase;
-            }
-        }
+        case 0:
+            if (m_creature->GetHealthPercent() <= 66.0f)
+                m_uiStage = 1;
 
-        if (m_uiSummonCloneTimer)
-        {
-            if (m_uiSummonCloneTimer <= uiDiff)
+            break;
+        case 1:
+            m_creature->InterruptNonMeleeSpells(true);
+            if (m_bIs25Man)
             {
-                if (DoCastSpellIfCan(m_creature, SPELL_SUMMON_CLONE) == CAST_OK)
-                {
-                    DoScriptText(SAY_SPLIT, m_creature);
-                    m_uiSummonCloneTimer = 0;
-                }
+                m_creature->CastSpell(m_creature, SPELL_SUMMON_CLONE, true);
+                DoScriptText(SAY_BALTHARUS_SPLIT, m_creature);
             }
-            else
-                m_uiSummonCloneTimer -= uiDiff;
+            m_uiStage = 2;
+            break;
+        case 2:
+            if (m_creature->IsNonMeleeSpellCasted(false))
+                return;
 
-            // no other actions
-            return;
+            if (m_bIs25Man)
+                m_creature->CastSpell(m_creature, SPELL_REPELLING_WAVE, false);
+
+            m_uiStage = 3;
+            break;
+        case 3:
+            if (m_creature->GetHealthPercent() <= 50.0f)
+                m_uiStage = 4;
+
+            break;
+        case 4:
+            m_creature->InterruptNonMeleeSpells(true);
+            if (!m_bIs25Man)
+            {
+               m_creature->CastSpell(m_creature, SPELL_SUMMON_CLONE, true);
+               DoScriptText(SAY_BALTHARUS_SPLIT, m_creature);
+            }
+            m_uiStage = 5;
+            break;
+        case 5:
+            if (m_creature->IsNonMeleeSpellCasted(true))
+                return;
+
+            m_creature->CastSpell(m_creature, SPELL_REPELLING_WAVE, false);
+            m_uiStage = 6;
+            break;
+        case 6:
+            if (m_creature->GetHealthPercent() <= 33.0f)
+                m_uiStage = 7;
+
+            break;
+        case 7:
+            m_creature->InterruptNonMeleeSpells(true);
+            if (m_bIs25Man)
+            {
+               m_creature->CastSpell(m_creature, SPELL_SUMMON_CLONE, true);
+               DoScriptText(SAY_BALTHARUS_SPLIT, m_creature);
+            }
+            m_uiStage = 8;
+            break;
+        case 8:
+            if (m_creature->IsNonMeleeSpellCasted(true))
+                return;
+
+            if (m_bIs25Man)
+                m_creature->CastSpell(m_creature, SPELL_REPELLING_WAVE, false);
+
+            m_uiStage = 9;
+            break;
+        case 9:
+            break;
+        default:
+            break;
         }
 
         if (m_uiBladeTempestTimer < uiDiff)
         {
             if (DoCastSpellIfCan(m_creature, SPELL_BLADE_TEMPEST) == CAST_OK)
-                m_uiBladeTempestTimer = 22000;
+                m_uiBladeTempestTimer = urand(20000, 25000);
         }
         else
             m_uiBladeTempestTimer -= uiDiff;
 
         if (m_uiEnervatingBrandTimer < uiDiff)
         {
-            if (Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0))
+            if (Unit *pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0))
             {
                 if (DoCastSpellIfCan(pTarget, SPELL_ENERVATING_BRAND) == CAST_OK)
-                    m_uiEnervatingBrandTimer = 25000;
+                    m_uiEnervatingBrandTimer = urand(10000, 13000);
             }
         }
         else
             m_uiEnervatingBrandTimer -= uiDiff;
 
-        if (m_uiCleaveTimer < uiDiff)
+        if (m_uiSaberLashTimer < uiDiff)
         {
-            if (DoCastSpellIfCan(m_creature, SPELL_CLEAVE) == CAST_OK)
-                m_uiCleaveTimer = urand(17000, 20000);
+            if (DoCastSpellIfCan(m_creature, SPELL_SABER_LASH) == CAST_OK)
+                m_uiSaberLashTimer = urand(8000, 12000);
         }
         else
-            m_uiCleaveTimer -= uiDiff;
-
-        DoMeleeAttackIfReady();
-    }
-};
-
-/*######
-## npc_baltharus_clone
-######*/
-
-struct npc_baltharus_cloneAI : public ScriptedAI
-{
-    npc_baltharus_cloneAI(Creature* pCreature) : ScriptedAI(pCreature) { Reset(); }
-
-    uint32 m_uiBladeTempestTimer;
-    uint32 m_uiEnervatingBrandTimer;
-    uint32 m_uiCleaveTimer;
-
-    void Reset() override
-    {
-        m_uiBladeTempestTimer       = 15000;
-        m_uiEnervatingBrandTimer    = 14000;
-        m_uiCleaveTimer             = urand(10000, 12000);
-    }
-
-    void SpellHitTarget(Unit* pTarget, SpellEntry const* pSpellEntry) override
-    {
-        if (pTarget->GetTypeId() == TYPEID_PLAYER && pSpellEntry->Id == SPELL_ENERVATING_BRAND_PL)
-            pTarget->CastSpell(m_creature, SPELL_SIPHONED_MIGHT, true);
-    }
-
-    void UpdateAI(const uint32 uiDiff) override
-    {
-        if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
-            return;
-
-        if (m_uiBladeTempestTimer < uiDiff)
-        {
-            if (DoCastSpellIfCan(m_creature, SPELL_BLADE_TEMPEST) == CAST_OK)
-                m_uiBladeTempestTimer = 22000;
-        }
-        else
-            m_uiBladeTempestTimer -= uiDiff;
-
-        if (m_uiEnervatingBrandTimer < uiDiff)
-        {
-            if (Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0))
-            {
-                if (DoCastSpellIfCan(pTarget, SPELL_ENERVATING_BRAND) == CAST_OK)
-                    m_uiEnervatingBrandTimer = 25000;
-            }
-        }
-        else
-            m_uiEnervatingBrandTimer -= uiDiff;
-
-        if (m_uiCleaveTimer < uiDiff)
-        {
-            if (DoCastSpellIfCan(m_creature, SPELL_CLEAVE) == CAST_OK)
-                m_uiCleaveTimer = urand(17000, 20000);
-        }
-        else
-            m_uiCleaveTimer -= uiDiff;
+            m_uiSaberLashTimer -= uiDiff;
 
         DoMeleeAttackIfReady();
     }
@@ -297,22 +329,112 @@ CreatureAI* GetAI_boss_baltharus(Creature* pCreature)
     return new boss_baltharusAI(pCreature);
 }
 
-CreatureAI* GetAI_npc_baltharus_clone(Creature* pCreature)
+/*######
+## mob_baltharus_clone
+######*/
+
+struct mob_baltharus_cloneAI : public ScriptedAI
 {
-    return new npc_baltharus_cloneAI(pCreature);
+    mob_baltharus_cloneAI(Creature* pCreature) : ScriptedAI(pCreature)
+    {
+        m_pInstance = (ScriptedInstance*)pCreature->GetInstanceData();
+        Reset();
+    }
+
+    ScriptedInstance *m_pInstance;
+    uint32 m_uiBladeTempestTimer;
+    uint32 m_uiEnervatingBrandTimer;
+    uint32 m_uiSaberLashTimer;
+
+    void Reset()
+    {
+        if (!m_pInstance)
+            return;
+
+        m_creature->SetRespawnDelay(7*DAY);
+        m_uiBladeTempestTimer = 22000;
+        m_uiEnervatingBrandTimer = 10000;
+        m_uiSaberLashTimer = 5000;
+    }
+
+    void KilledUnit(Unit* pVictim) override
+    {
+        DoScriptText(SAY_BALTHARUS_SLAY_1 - urand(0,1),m_creature,pVictim);
+    }
+
+    void JustDied(Unit* pKiller) override
+    {
+        if (!m_pInstance)
+            return;
+
+        m_creature->SetVisibility(VISIBILITY_OFF);
+    }
+
+    void Aggro(Unit* pWho)
+    {
+        if (!m_pInstance)
+            return;
+
+        m_creature->SetInCombatWithZone();
+    }
+
+    void UpdateAI(const uint32 uiDiff) override
+    {
+        if (!m_pInstance)
+            return;
+
+        if (m_pInstance->GetData(TYPE_BALTHARUS) != IN_PROGRESS)
+            m_creature->ForcedDespawn();
+
+        if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
+            return;
+
+        if (m_uiBladeTempestTimer < uiDiff)
+        {
+            if (DoCastSpellIfCan(m_creature, SPELL_BLADE_TEMPEST) == CAST_OK)
+                m_uiBladeTempestTimer = urand(20000, 25000);
+        }
+        else
+            m_uiBladeTempestTimer -= uiDiff;
+
+        if (m_uiEnervatingBrandTimer < uiDiff)
+        {
+            if (Unit *pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0))
+            {
+                if (DoCastSpellIfCan(pTarget, SPELL_ENERVATING_BRAND) == CAST_OK)
+                    m_uiEnervatingBrandTimer = urand(10000, 13000);
+            }
+        }
+        else
+            m_uiEnervatingBrandTimer -= uiDiff;
+
+        if (m_uiSaberLashTimer < uiDiff)
+        {
+            if (DoCastSpellIfCan(m_creature, SPELL_SABER_LASH) == CAST_OK)
+                m_uiSaberLashTimer = urand(8000, 12000);
+        }
+        else
+            m_uiSaberLashTimer -= uiDiff;
+
+        DoMeleeAttackIfReady();
+    }
+};
+
+CreatureAI* GetAI_mob_baltharus_clone(Creature* pCreature)
+{
+    return new mob_baltharus_cloneAI(pCreature);
 }
 
 void AddSC_boss_baltharus()
 {
-    Script* pNewScript;
+    Script *newscript;
+    newscript = new Script;
+    newscript->Name = "boss_baltharus";
+    newscript->GetAI = &GetAI_boss_baltharus;
+    newscript->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "boss_baltharus";
-    pNewScript->GetAI = &GetAI_boss_baltharus;
-    pNewScript->RegisterSelf();
-
-    pNewScript = new Script;
-    pNewScript->Name = "npc_baltharus_clone";
-    pNewScript->GetAI = &GetAI_npc_baltharus_clone;
-    pNewScript->RegisterSelf();
+    newscript = new Script;
+    newscript->Name = "mob_baltharus_clone";
+    newscript->GetAI = &GetAI_mob_baltharus_clone;
+    newscript->RegisterSelf();
 }

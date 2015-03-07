@@ -38,12 +38,6 @@ enum
     SAY_PATHALEON_INTRO     = -1554028,
 };
 
-struct SpawnLocation
-{
-    uint32 m_uiSpawnEntry;
-    float m_fX, m_fY, m_fZ, m_fO;
-};
-
 static const SpawnLocation aBridgeEventLocs[MAX_BRIDGE_LOCATIONS][4] =
 {
     {

@@ -1,4 +1,4 @@
-/* This file is part of the ScriptDev2 Project. See AUTHORS file for Copyright information
+/* Copyright (C) 2006 - 2012 ScriptDev2 <http://www.scriptdev2.com/>
  * This program is free software licensed under GPL version 2
  * Please see the included DOCS/LICENSE.TXT for more information */
 
@@ -12,17 +12,36 @@
 #include "../system/ScriptLoader.h"
 #include "../system/system.h"
 #include "../../../game/ScriptMgr.h"
+#include "World.h"
 
 typedef std::vector<Script*> SDScriptVec;
+typedef std::map<std::string, Script*> SDScriptMap;
+
 int num_sc_scripts;
-SDScriptVec m_scripts;
+SDScriptVec *m_scripts = NULL;
+SDScriptMap *m_scriptStorage = NULL;    // Not registered scripts storage
 
 Config SD2Config;
+
+/**********************************************************************
++additions for windows compiler
+**********************************************************************/
+#ifdef _WIN32
+World::World(){}
+World::~World(){}
+#endif
+/***********************************************************************/
+
+QueryResult* strSD2Pquery(char* str)
+{
+    return SD2Database.Query(str);
+}
 
 void FillSpellSummary();
 
 void LoadDatabase()
 {
+
     std::string strSD2DBinfo = SD2Config.GetStringDefault("ScriptDev2DatabaseInfo", "");
 
     if (strSD2DBinfo.empty())
@@ -35,19 +54,8 @@ void LoadDatabase()
     if (SD2Database.Initialize(strSD2DBinfo.c_str()))
     {
         outstring_log("SD2: ScriptDev2 database initialized.");
-        outstring_log("");
+        //outstring_log("");
 
-        // Extract DB-Name
-        std::string::size_type n = strSD2DBinfo.rfind(';');
-        std::string dbname;
-        if (n != std::string::npos && n + 1 != std::string::npos)
-            dbname = strSD2DBinfo.substr(n + 1);
-        else
-            dbname = "SD2_Database";
-        dbname.append(".script_waypoint");
-        SetExternalWaypointTable(dbname.c_str());
-
-        // Load content
         pSystemMgr.LoadVersion();
         pSystemMgr.LoadScriptTexts();
         pSystemMgr.LoadScriptTextsCustom();
@@ -60,28 +68,34 @@ void LoadDatabase()
         return;
     }
 
-    SD2Database.HaltDelayThread();
 }
 
 struct TSpellSummary
 {
     uint8 Targets;                                          // set of enum SelectTarget
     uint8 Effects;                                          // set of enum SelectEffect
-} extern* SpellSummary;
+} extern *SpellSummary;
 
 MANGOS_DLL_EXPORT
 void FreeScriptLibrary()
 {
     // Free Spell Summary
-    delete []SpellSummary;
+    delete[] SpellSummary;
 
     // Free resources before library unload
-    for (SDScriptVec::const_iterator itr = m_scripts.begin(); itr != m_scripts.end(); ++itr)
+    for (SDScriptVec::const_iterator itr = m_scripts->begin(); itr != m_scripts->end(); ++itr)
         delete *itr;
 
-    m_scripts.clear();
+    delete m_scripts;
+
+    for (SDScriptMap::const_iterator itr = m_scriptStorage->begin(); itr != m_scriptStorage->end(); ++itr)
+        delete itr->second;
+
+    delete m_scriptStorage;
 
     num_sc_scripts = 0;
+
+    SD2Database.HaltDelayThread();
 
     setScriptLibraryErrorFile(NULL, NULL);
 }
@@ -90,7 +104,7 @@ MANGOS_DLL_EXPORT
 void InitScriptLibrary()
 {
     // ScriptDev2 startup
-    outstring_log("");
+    // outstring_log("");
     outstring_log(" MMM  MMM    MM");
     outstring_log("M  MM M  M  M  M");
     outstring_log("MM    M   M   M");
@@ -102,10 +116,10 @@ void InitScriptLibrary()
 
     // Get configuration file
     bool configFailure = false;
-    if (!SD2Config.SetSource(_SCRIPTDEV2_CONFIG))
+    if (!SD2Config.SetSource(_SCRIPTDEV2_CONFIG, "ScriptDev2Conf"))
         configFailure = true;
     else
-        outstring_log("SD2: Using configuration file %s", _SCRIPTDEV2_CONFIG);
+        outstring_log("SD2: Using configuration file %s",_SCRIPTDEV2_CONFIG);
 
     // Set SD2 Error Log File
     std::string sd2LogFile = SD2Config.GetStringDefault("SD2ErrorLogFile", "SD2Errors.log");
@@ -118,7 +132,7 @@ void InitScriptLibrary()
     if (SD2Config.GetIntDefault("ConfVersion", 0) != SD2_CONF_VERSION)
         script_error_log("Configuration file version doesn't match expected version. Some config variables may be wrong or missing.");
 
-    outstring_log("");
+    // outstring_log("");
 
     // Load database (must be called after SD2Config.SetSource).
     LoadDatabase();
@@ -126,10 +140,12 @@ void InitScriptLibrary()
     outstring_log("SD2: Loading C++ scripts");
     BarGoLink bar(1);
     bar.step();
-    outstring_log("");
+    // outstring_log("");
 
-    // Resize script ids to needed ammount of assigned ScriptNames (from core)
-    m_scripts.resize(GetScriptIdsCount(), NULL);
+    // Initialize script ids to needed ammount of assigned ScriptNames (from core)
+    m_scripts = new SDScriptVec(GetScriptIdsCount(), NULL);
+
+    m_scriptStorage = new SDScriptMap();
 
     FillSpellSummary();
 
@@ -138,7 +154,7 @@ void InitScriptLibrary()
     // Check existance scripts for all registered by core script names
     for (uint32 i = 1; i < GetScriptIdsCount(); ++i)
     {
-        if (!m_scripts[i])
+        if (!m_scripts->at(i))
             script_error_log("No script found for ScriptName '%s'.", GetScriptName(i));
     }
 
@@ -155,7 +171,7 @@ void InitScriptLibrary()
  * @param pSource Source of the text
  * @param pTarget Can be NULL (depending on CHAT_TYPE of iTextEntry). Possible target for the text
  */
-void DoScriptText(int32 iTextEntry, WorldObject* pSource, Unit* pTarget)
+void DoScriptText(int32 iTextEntry, WorldObject* pSource, Unit* pTarget/*=NULL*/)
 {
     if (!pSource)
     {
@@ -165,8 +181,8 @@ void DoScriptText(int32 iTextEntry, WorldObject* pSource, Unit* pTarget)
 
     if (iTextEntry >= 0)
     {
-        script_error_log("DoScriptText with source entry %u (TypeId=%u, guid=%u) attempts to process text entry %i, but text entry must be negative.",
-                         pSource->GetEntry(), pSource->GetTypeId(), pSource->GetGUIDLow(), iTextEntry);
+        script_error_log("DoScriptText with source %s attempts to process text entry %i, but text entry must be negative.",
+            pSource->GetGuidStr().c_str(), iTextEntry);
 
         return;
     }
@@ -235,18 +251,45 @@ void DoOrSimulateScriptTextForMap(int32 iTextEntry, uint32 uiCreatureEntry, Map*
 
 void Script::RegisterSelf(bool bReportError)
 {
-    if (uint32 id = GetScriptId(Name.c_str()))
+    if (uint32 id = GetScriptId(Name))
     {
-        m_scripts[id] = this;
+        m_scripts->at(id) = this;
         ++num_sc_scripts;
     }
     else
     {
         if (bReportError)
-            script_error_log("Script registering but ScriptName %s is not assigned in database. Script will not be used.", Name.c_str());
+            script_error_log("Script registering but ScriptName %s is not assigned in database. Script will not be used.", Name);
 
-        delete this;
+        m_scriptStorage->insert(std::make_pair(Name, this));
     }
+}
+
+//*********************************
+//******** AutoScript *************
+
+Script* AutoScript::newScript(char const* scriptName, bool reportError /*=true*/)
+{
+    Register(); // register last added script (if any)
+
+    m_script = new Script(scriptName);
+    m_reportError = reportError;
+    return m_script;
+}
+
+Script* AutoScript::newScript(char const* scriptName, TGetAI getAIPtr, bool reportError /*= true*/)
+{
+    newScript(scriptName, reportError);
+    m_script->GetAI = getAIPtr;
+    return m_script;
+}
+
+void AutoScript::Register()
+{
+    if (!m_script)
+        return;
+    m_script->RegisterSelf(m_reportError);
+    m_script = NULL;
 }
 
 //********************************
@@ -261,7 +304,10 @@ char const* GetScriptLibraryVersion()
 MANGOS_DLL_EXPORT
 bool GossipHello(Player* pPlayer, Creature* pCreature)
 {
-    Script* pTempScript = m_scripts[pCreature->GetScriptId()];
+    if (!pCreature)
+        return false;
+
+    Script* pTempScript = m_scripts->at(pCreature->GetScriptId());
 
     if (!pTempScript || !pTempScript->pGossipHello)
         return false;
@@ -274,7 +320,10 @@ bool GossipHello(Player* pPlayer, Creature* pCreature)
 MANGOS_DLL_EXPORT
 bool GOGossipHello(Player* pPlayer, GameObject* pGo)
 {
-    Script* pTempScript = m_scripts[pGo->GetGOInfo()->ScriptId];
+    if (!pGo)
+        return false;
+
+    Script* pTempScript = m_scripts->at(pGo->GetGOInfo()->ScriptId);
 
     if (!pTempScript || !pTempScript->pGossipHelloGO)
         return false;
@@ -289,12 +338,17 @@ bool GossipSelect(Player* pPlayer, Creature* pCreature, uint32 uiSender, uint32 
 {
     debug_log("SD2: Gossip selection, sender: %u, action: %u", uiSender, uiAction);
 
-    Script* pTempScript = m_scripts[pCreature->GetScriptId()];
+    if (!pCreature)
+        return false;
+
+    Script* pTempScript = m_scripts->at(pCreature->GetScriptId());
 
     if (!pTempScript || !pTempScript->pGossipSelect)
         return false;
 
-    pPlayer->PlayerTalkClass->ClearMenus();
+//    pPlayer->PlayerTalkClass->ClearMenus();
+//    this expression is wrong, where 'return false' from script's GossipSelect
+//    not return menu ID (cleared in this string) and not allow to work with database-based menus
 
     return pTempScript->pGossipSelect(pPlayer, pCreature, uiSender, uiAction);
 }
@@ -304,7 +358,10 @@ bool GOGossipSelect(Player* pPlayer, GameObject* pGo, uint32 uiSender, uint32 ui
 {
     debug_log("SD2: GO Gossip selection, sender: %u, action: %u", uiSender, uiAction);
 
-    Script* pTempScript = m_scripts[pGo->GetGOInfo()->ScriptId];
+    if (!pGo)
+        return false;
+
+    Script* pTempScript = m_scripts->at(pGo->GetGOInfo()->ScriptId);
 
     if (!pTempScript || !pTempScript->pGossipSelectGO)
         return false;
@@ -319,7 +376,10 @@ bool GossipSelectWithCode(Player* pPlayer, Creature* pCreature, uint32 uiSender,
 {
     debug_log("SD2: Gossip selection with code, sender: %u, action: %u", uiSender, uiAction);
 
-    Script* pTempScript = m_scripts[pCreature->GetScriptId()];
+    if (!pCreature)
+        return false;
+
+    Script* pTempScript = m_scripts->at(pCreature->GetScriptId());
 
     if (!pTempScript || !pTempScript->pGossipSelectWithCode)
         return false;
@@ -334,7 +394,10 @@ bool GOGossipSelectWithCode(Player* pPlayer, GameObject* pGo, uint32 uiSender, u
 {
     debug_log("SD2: GO Gossip selection with code, sender: %u, action: %u", uiSender, uiAction);
 
-    Script* pTempScript = m_scripts[pGo->GetGOInfo()->ScriptId];
+    if (!pGo)
+        return false;
+
+    Script* pTempScript = m_scripts->at(pGo->GetGOInfo()->ScriptId);
 
     if (!pTempScript || !pTempScript->pGossipSelectGOWithCode)
         return false;
@@ -347,7 +410,10 @@ bool GOGossipSelectWithCode(Player* pPlayer, GameObject* pGo, uint32 uiSender, u
 MANGOS_DLL_EXPORT
 bool QuestAccept(Player* pPlayer, Creature* pCreature, const Quest* pQuest)
 {
-    Script* pTempScript = m_scripts[pCreature->GetScriptId()];
+    if (!pCreature)
+        return false;
+
+    Script* pTempScript = m_scripts->at(pCreature->GetScriptId());
 
     if (!pTempScript || !pTempScript->pQuestAcceptNPC)
         return false;
@@ -360,7 +426,10 @@ bool QuestAccept(Player* pPlayer, Creature* pCreature, const Quest* pQuest)
 MANGOS_DLL_EXPORT
 bool QuestRewarded(Player* pPlayer, Creature* pCreature, Quest const* pQuest)
 {
-    Script* pTempScript = m_scripts[pCreature->GetScriptId()];
+    if (!pCreature)
+        return false;
+
+    Script* pTempScript = m_scripts->at(pCreature->GetScriptId());
 
     if (!pTempScript || !pTempScript->pQuestRewardedNPC)
         return false;
@@ -373,7 +442,7 @@ bool QuestRewarded(Player* pPlayer, Creature* pCreature, Quest const* pQuest)
 MANGOS_DLL_EXPORT
 uint32 GetNPCDialogStatus(Player* pPlayer, Creature* pCreature)
 {
-    Script* pTempScript = m_scripts[pCreature->GetScriptId()];
+    Script* pTempScript = m_scripts->at(pCreature->GetScriptId());
 
     if (!pTempScript || !pTempScript->pDialogStatusNPC)
         return DIALOG_STATUS_UNDEFINED;
@@ -386,7 +455,10 @@ uint32 GetNPCDialogStatus(Player* pPlayer, Creature* pCreature)
 MANGOS_DLL_EXPORT
 uint32 GetGODialogStatus(Player* pPlayer, GameObject* pGo)
 {
-    Script* pTempScript = m_scripts[pGo->GetGOInfo()->ScriptId];
+    if (!pGo)
+        return false;
+
+    Script* pTempScript = m_scripts->at(pGo->GetGOInfo()->ScriptId);
 
     if (!pTempScript || !pTempScript->pDialogStatusGO)
         return DIALOG_STATUS_UNDEFINED;
@@ -399,7 +471,10 @@ uint32 GetGODialogStatus(Player* pPlayer, GameObject* pGo)
 MANGOS_DLL_EXPORT
 bool ItemQuestAccept(Player* pPlayer, Item* pItem, Quest const* pQuest)
 {
-    Script* pTempScript = m_scripts[pItem->GetProto()->ScriptId];
+    if (!pItem)
+        return false;
+
+    Script* pTempScript = m_scripts->at(pItem->GetProto()->ScriptId);
 
     if (!pTempScript || !pTempScript->pQuestAcceptItem)
         return false;
@@ -412,7 +487,10 @@ bool ItemQuestAccept(Player* pPlayer, Item* pItem, Quest const* pQuest)
 MANGOS_DLL_EXPORT
 bool GOUse(Player* pPlayer, GameObject* pGo)
 {
-    Script* pTempScript = m_scripts[pGo->GetGOInfo()->ScriptId];
+    if (!pGo)
+        return false;
+
+    Script* pTempScript = m_scripts->at(pGo->GetGOInfo()->ScriptId);
 
     if (!pTempScript || !pTempScript->pGOUse)
         return false;
@@ -423,7 +501,10 @@ bool GOUse(Player* pPlayer, GameObject* pGo)
 MANGOS_DLL_EXPORT
 bool GOQuestAccept(Player* pPlayer, GameObject* pGo, const Quest* pQuest)
 {
-    Script* pTempScript = m_scripts[pGo->GetGOInfo()->ScriptId];
+    if (!pGo)
+        return false;
+
+    Script* pTempScript = m_scripts->at(pGo->GetGOInfo()->ScriptId);
 
     if (!pTempScript || !pTempScript->pQuestAcceptGO)
         return false;
@@ -436,7 +517,10 @@ bool GOQuestAccept(Player* pPlayer, GameObject* pGo, const Quest* pQuest)
 MANGOS_DLL_EXPORT
 bool GOQuestRewarded(Player* pPlayer, GameObject* pGo, Quest const* pQuest)
 {
-    Script* pTempScript = m_scripts[pGo->GetGOInfo()->ScriptId];
+    if (!pGo)
+        return false;
+
+    Script* pTempScript = m_scripts->at(pGo->GetGOInfo()->ScriptId);
 
     if (!pTempScript || !pTempScript->pQuestRewardedGO)
         return false;
@@ -449,7 +533,7 @@ bool GOQuestRewarded(Player* pPlayer, GameObject* pGo, Quest const* pQuest)
 MANGOS_DLL_EXPORT
 bool AreaTrigger(Player* pPlayer, AreaTriggerEntry const* atEntry)
 {
-    Script* pTempScript = m_scripts[GetAreaTriggerScriptId(atEntry->id)];
+    Script* pTempScript = m_scripts->at(GetAreaTriggerScriptId(atEntry->id));
 
     if (!pTempScript || !pTempScript->pAreaTrigger)
         return false;
@@ -460,7 +544,7 @@ bool AreaTrigger(Player* pPlayer, AreaTriggerEntry const* atEntry)
 MANGOS_DLL_EXPORT
 bool NpcSpellClick(Player* pPlayer, Creature* pClickedCreature, uint32 uiSpellId)
 {
-    Script* pTempScript = m_scripts[pClickedCreature->GetScriptId()];
+    Script* pTempScript = m_scripts->at(pClickedCreature->GetScriptId());
 
     if (!pTempScript || !pTempScript->pNpcSpellClick)
         return false;
@@ -471,7 +555,7 @@ bool NpcSpellClick(Player* pPlayer, Creature* pClickedCreature, uint32 uiSpellId
 MANGOS_DLL_EXPORT
 bool ProcessEvent(uint32 uiEventId, Object* pSource, Object* pTarget, bool bIsStart)
 {
-    Script* pTempScript = m_scripts[GetEventIdScriptId(uiEventId)];
+    Script* pTempScript = m_scripts->at(GetEventIdScriptId(uiEventId));
 
     if (!pTempScript || !pTempScript->pProcessEventId)
         return false;
@@ -483,7 +567,10 @@ bool ProcessEvent(uint32 uiEventId, Object* pSource, Object* pTarget, bool bIsSt
 MANGOS_DLL_EXPORT
 CreatureAI* GetCreatureAI(Creature* pCreature)
 {
-    Script* pTempScript = m_scripts[pCreature->GetScriptId()];
+    if (!pCreature)
+        return NULL;
+
+    Script* pTempScript = m_scripts->at(pCreature->GetScriptId());
 
     if (!pTempScript || !pTempScript->GetAI)
         return NULL;
@@ -494,7 +581,10 @@ CreatureAI* GetCreatureAI(Creature* pCreature)
 MANGOS_DLL_EXPORT
 bool ItemUse(Player* pPlayer, Item* pItem, SpellCastTargets const& targets)
 {
-    Script* pTempScript = m_scripts[pItem->GetProto()->ScriptId];
+    if (!pItem)
+        return false;
+
+    Script* pTempScript = m_scripts->at(pItem->GetProto()->ScriptId);
 
     if (!pTempScript || !pTempScript->pItemUse)
         return false;
@@ -505,7 +595,10 @@ bool ItemUse(Player* pPlayer, Item* pItem, SpellCastTargets const& targets)
 MANGOS_DLL_EXPORT
 bool EffectDummyCreature(Unit* pCaster, uint32 spellId, SpellEffectIndex effIndex, Creature* pTarget, ObjectGuid originalCasterGuid)
 {
-    Script* pTempScript = m_scripts[pTarget->GetScriptId()];
+    if (!pTarget)
+        return false;
+
+    Script* pTempScript = m_scripts->at(pTarget->GetScriptId());
 
     if (!pTempScript || !pTempScript->pEffectDummyNPC)
         return false;
@@ -516,7 +609,10 @@ bool EffectDummyCreature(Unit* pCaster, uint32 spellId, SpellEffectIndex effInde
 MANGOS_DLL_EXPORT
 bool EffectDummyGameObject(Unit* pCaster, uint32 spellId, SpellEffectIndex effIndex, GameObject* pTarget, ObjectGuid originalCasterGuid)
 {
-    Script* pTempScript = m_scripts[pTarget->GetGOInfo()->ScriptId];
+    if (!pTarget)
+        return false;
+
+    Script* pTempScript = m_scripts->at(pTarget->GetGOInfo()->ScriptId);
 
     if (!pTempScript || !pTempScript->pEffectDummyGO)
         return false;
@@ -527,7 +623,10 @@ bool EffectDummyGameObject(Unit* pCaster, uint32 spellId, SpellEffectIndex effIn
 MANGOS_DLL_EXPORT
 bool EffectDummyItem(Unit* pCaster, uint32 spellId, SpellEffectIndex effIndex, Item* pTarget, ObjectGuid originalCasterGuid)
 {
-    Script* pTempScript = m_scripts[pTarget->GetProto()->ScriptId];
+    if (!pTarget)
+        return false;
+
+    Script* pTempScript = m_scripts->at(pTarget->GetProto()->ScriptId);
 
     if (!pTempScript || !pTempScript->pEffectDummyItem)
         return false;
@@ -538,7 +637,7 @@ bool EffectDummyItem(Unit* pCaster, uint32 spellId, SpellEffectIndex effIndex, I
 MANGOS_DLL_EXPORT
 bool EffectScriptEffectCreature(Unit* pCaster, uint32 spellId, SpellEffectIndex effIndex, Creature* pTarget, ObjectGuid originalCasterGuid)
 {
-    Script* pTempScript = m_scripts[pTarget->GetScriptId()];
+    Script* pTempScript = m_scripts->at(pTarget->GetScriptId());
 
     if (!pTempScript || !pTempScript->pEffectScriptEffectNPC)
         return false;
@@ -549,7 +648,7 @@ bool EffectScriptEffectCreature(Unit* pCaster, uint32 spellId, SpellEffectIndex 
 MANGOS_DLL_EXPORT
 bool AuraDummy(Aura const* pAura, bool bApply)
 {
-    Script* pTempScript = m_scripts[((Creature*)pAura->GetTarget())->GetScriptId()];
+    Script* pTempScript = m_scripts->at(((Creature*)pAura->GetTarget())->GetScriptId());
 
     if (!pTempScript || !pTempScript->pEffectAuraDummy)
         return false;
@@ -560,10 +659,19 @@ bool AuraDummy(Aura const* pAura, bool bApply)
 MANGOS_DLL_EXPORT
 InstanceData* CreateInstanceData(Map* pMap)
 {
-    Script* pTempScript = m_scripts[pMap->GetScriptId()];
+    Script* pTempScript = m_scripts->at(pMap->GetScriptId());
 
     if (!pTempScript || !pTempScript->GetInstanceData)
         return NULL;
 
     return pTempScript->GetInstanceData(pMap);
+}
+
+Script* GetScriptByName(std::string scriptName)
+{
+    SDScriptMap::const_iterator itr = m_scriptStorage->find(scriptName);
+    if (itr != m_scriptStorage->end())
+        return itr->second;
+    else
+        return NULL;
 }

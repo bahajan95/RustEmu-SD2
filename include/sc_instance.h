@@ -1,4 +1,4 @@
-/* This file is part of the ScriptDev2 Project. See AUTHORS file for Copyright information
+/* Copyright (C) 2006 - 2013 ScriptDev2 <http://www.scriptdev2.com/>
 * This program is free software licensed under GPL version 2
 * Please see the included DOCS/LICENSE.TXT for more information */
 
@@ -27,7 +27,7 @@ class ScriptedInstance : public InstanceData
 {
     public:
         ScriptedInstance(Map* pMap) : InstanceData(pMap) {}
-        ~ScriptedInstance() {}
+        virtual ~ScriptedInstance() {}
 
         // Default accessor functions
         GameObject* GetSingleGameObjectFromStorage(uint32 uiEntry);
@@ -36,6 +36,10 @@ class ScriptedInstance : public InstanceData
         // Change active state of doors or buttons
         void DoUseDoorOrButton(ObjectGuid guid, uint32 uiWithRestoreTime = 0, bool bUseAlternativeState = false);
         void DoUseDoorOrButton(uint32 uiEntry, uint32 uiWithRestoreTime = 0, bool bUseAlternativeState = false);
+        void DoOpenDoor(ObjectGuid guid, bool bUseAlternativeState = false);
+        void DoOpenDoor(uint32 uiEntry, bool bUseAlternativeState = false);
+        void DoCloseDoor(ObjectGuid guid);
+        void DoCloseDoor(uint32 uiEntry);
 
         // Respawns a GO having negative spawntimesecs in gameobject-table
         void DoRespawnGameObject(ObjectGuid guid, uint32 uiTimeToDespawn = MINUTE);
@@ -48,8 +52,17 @@ class ScriptedInstance : public InstanceData
         // Sends world state update to all players in instance
         void DoUpdateWorldState(uint32 uiStateId, uint32 uiStateData);
 
+        // Sends completed achievments to all players in instance
+        void DoCompleteAchievement(uint32 uiAchievmentId);
+
+        // Sends achievment criteria update to all players in instance
+        void DoUpdateAchievementCriteria(AchievementCriteriaTypes type, uint32 miscvalue1 = 0, uint32 miscvalue2 = 0);
+
         // Get a Player from map
         Player* GetPlayerInMap(bool bOnlyAlive = false, bool bCanBeGamemaster = true);
+
+        // Destroys an item from all players in this instance (encounters like Vashj, Najentus....) 
+        void DestroyItemFromAllPlayers(uint32 uiItemId);
 
         /// Wrapper for simulating map-wide text in this instance. It is expected that the Creature is stored in m_mNpcEntryGuidStore if loaded.
         void DoOrSimulateScriptTextForThisInstance(int32 iTextEntry, uint32 uiCreatureEntry)
@@ -58,8 +71,15 @@ class ScriptedInstance : public InstanceData
             DoOrSimulateScriptTextForMap(iTextEntry, uiCreatureEntry, instance, GetSingleCreatureFromStorage(uiCreatureEntry, true));
         }
 
+        void DoCastSpellOnPlayers(uint32 spellId, int32* bp0 = NULL, int32* bp1 = NULL, int32* bp2 = NULL);
+        void DoRemoveAurasDueToSpellOnPlayers(uint32 spellId);
+        void DoSetAlternativePowerOnPlayers(int32 amt);
+
         // Starts a timed achievement criteria for all players in instance
         void DoStartTimedAchievement(AchievementCriteriaTypes criteriaType, uint32 uiTimedCriteriaMiscId);
+
+        virtual bool SetBossState(uint32 id, EncounterState state) { return true; }
+        void SendEncounterUnit(uint32 type, Unit* unit = NULL, uint8 param1 = 0, uint8 param2 = 0) { }
 
     protected:
         // Storage for GO-Guids and NPC-Guids
@@ -73,6 +93,7 @@ class ScriptedMap : public ScriptedInstance
 {
     public:
         ScriptedMap(Map* pMap) : ScriptedInstance(pMap) {}
+        virtual ~ScriptedMap() {}
 };
 
 /// A static const array of this structure must be handled to DialogueHelper

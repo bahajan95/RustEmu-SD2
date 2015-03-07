@@ -70,11 +70,6 @@ static const DialogueEntry aIntroDialogue[] =
     {0, 0, 0},
 };
 
-struct SpawnLocation
-{
-    float m_fX, m_fY, m_fZ;
-};
-
 static const SpawnLocation aNefarianLocs[4] =
 {
     { -7599.32f, -1191.72f, 475.545f},                      // opening where red/blue/black darknid spawner appear (ori 3.05433)
@@ -187,7 +182,7 @@ struct boss_victor_nefariusAI : public ScriptedAI, private DialogueHelper
             pSummoned->SetWalk(false);
 
             // see boss_onyxia (also note the removal of this in boss_nefarian)
-            pSummoned->SetByteValue(UNIT_FIELD_BYTES_1, 3, UNIT_BYTE1_FLAG_FLY_ANIM);
+            pSummoned->SetByteValue(UNIT_FIELD_BYTES_1, 3, UNIT_BYTE1_FLAG_HOVER);
             pSummoned->SetLevitate(true);
 
             // Let Nefarian fly towards combat area
