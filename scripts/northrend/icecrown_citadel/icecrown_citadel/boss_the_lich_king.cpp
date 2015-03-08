@@ -232,7 +232,7 @@ enum
     POINT_SPIRIT_BOMB,           // Spirit Bomb moving down
 };
 
-static Location SpawnLoc[] =
+static StaticLocation SpawnLoc[] =
 {
     {463.0f,     -2124.0f,      840.86f},    // 0 Lich King Intro
     {503.15652f, -2124.516602f, 840.86f},    // 1 Center of the platform
@@ -241,7 +241,7 @@ static Location SpawnLoc[] =
     {494.313f,   -2523.079f,    1049.87f}    // 4 center of platform inside Frostmourne
 };
 
-static Location TirionLoc[] =
+static StaticLocation TirionLoc[] =
 {
     {489.5f,     -2125.0f,      840.86f},     // 0 POINT_TIRION_INTRO
     {495.0f,     -2124.516602f, 840.86f},     // 1 POINT_TIRION_OUTRO

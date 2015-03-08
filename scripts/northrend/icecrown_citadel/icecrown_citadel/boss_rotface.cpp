@@ -96,7 +96,7 @@ enum
     SAY_DEATH                   = -1631079,
 };
 
-static Location SpawnLoc[]=
+static StaticLocation SpawnLoc[] =
 {
     {4391.38f, 3163.71f, 389.40f, 5.8f}                 // rotface side
 };

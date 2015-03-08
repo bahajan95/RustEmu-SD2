@@ -37,7 +37,7 @@ enum
     XERESTRASZA_SAY_OUTRO_7               = -1724009,
 };
 
-static Location SpawnLoc[]=
+static StaticLocation SpawnLoc[] =
 {
     {3155.540039f, 342.391998f, 84.596802f},   // 0 - start point
     {3152.329834f, 359.41757f, 85.301605f},    // 1 - second say
