@@ -1,4 +1,4 @@
-/* This file is part of the ScriptDev2 Project. See AUTHORS file for Copyright information
+/* Copyright (C) 2006 - 2013 ScriptDev2 <http://www.scriptdev2.com/>
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
@@ -15,114 +15,107 @@
  */
 
 /* ScriptData
-SDName: boss_eregos
-SD%Complete: 90
-SDComment: Small adjustments may be required.
+SDName: Boss_Eregos
+SD%Complete: 60%
+SDComment:
+SDAuthor: originally from TC, reworked by MaxXx2021 Aka Mioka, corrected by /dev/rsa
 SDCategory: Oculus
 EndScriptData */
 
 #include "precompiled.h"
 #include "oculus.h"
 
-enum
+enum Spells
 {
-    SAY_AGGRO                       = -1578011,
-    SAY_ARCANE_SHIELD               = -1578012,
-    SAY_FIRE_SHIELD                 = -1578013,
-    SAY_NATURE_SHIELD               = -1578014,
-    SAY_FRENZY                      = -1578015,
-    SAY_KILL_1                      = -1578016,
-    SAY_KILL_2                      = -1578017,
-    SAY_KILL_3                      = -1578018,
-    SAY_DEATH                       = -1578019,
-    EMOTE_ASTRAL_PLANE              = -1578024,
+    SAY_SPAWN            = -1578010,
+    SAY_AGGRO            = -1578011,
+    SAY_ARCANE_SHIELD    = -1578012,
+    SAY_FIRE_SHIELD      = -1578013,
+    SAY_NATURE_SHIELD    = -1578014,
+    SAY_FRENZY           = -1578015,
+    SAY_KILL_1           = -1578016,
+    SAY_KILL_2           = -1578017,
+    SAY_KILL_3           = -1578018,
+    SAY_DEATH            = -1578019,
 
-    SPELL_ARCANE_BARRAGE            = 50804,
-    SPELL_ARCANE_BARRAGE_H          = 59381,
-    SPELL_ARCANE_VOLLEY             = 51153,
-    SPELL_ARCANE_VOLLEY_H           = 59382,
-    SPELL_ENRAGED_ASSAULT           = 51170,
-    SPELL_PLANAR_ANOMALIES          = 57959,
-    SPELL_SUMMON_LEY_WHELP          = 51175,
-    SPELL_PLANAR_SHIFT              = 51162,
+    SPELL_ARCANE_BARRAGE_N                        = 50804,
+    SPELL_ARCANE_BARRAGE_H                        = 59381,
+    SPELL_ARCANE_VOLLEY_N                         = 51153,
+    SPELL_ARCANE_VOLLEY_H                         = 59382,
+    SPELL_ENRAGED_ASSAULT                         = 51170,
+    SPELL_SUMMON_DRAKE                            = 51175,
+    SPELL_PLANAR_ANOMALIES                        = 57959,
+    SPELL_PLANAR_ANOMALIES_SUMMON                 = 57963, //need spell script on m_creature 27656
+    SPELL_PLANAR_ANOMALIES_VISUAL                 = 57971,
+    SPELL_PLANAR_SHIFT                            = 51162,
+    SPELL_PLANAR_ANOMALIES_DMG                    = 57976,
 
-    SPELL_PLANAR_ANOMALY_AGGRO      = 57971,
-    SPELL_PLANAR_BLAST              = 57976,
-
-    NPC_PLANAR_ANOMALY              = 30879,
-    NPC_GREATER_LEY_WHELP           = 28276,
+    NPC_PLANAR_ANOMALY                            = 30879,
+    NPC_DRAGON                                    = 28276
 };
-
-/*######
-## boss_eregos
-######*/
 
 struct boss_eregosAI : public ScriptedAI
 {
-    boss_eregosAI(Creature* pCreature) : ScriptedAI(pCreature)
+    boss_eregosAI(Creature *pCreature) : ScriptedAI(pCreature)
     {
-        m_pInstance = (ScriptedInstance*)pCreature->GetInstanceData();
+        m_pInstance = (instance_oculus*)pCreature->GetInstanceData();
         m_bIsRegularMode = pCreature->GetMap()->IsRegularDifficulty();
         Reset();
     }
 
-    ScriptedInstance* m_pInstance;
+    instance_oculus* m_pInstance;
     bool m_bIsRegularMode;
 
-    uint32 m_uiArcaneBarrageTimer;
-    uint32 m_uiArcaneVolleyTimer;
-    uint32 m_uiEnrageTimer;
-    uint32 m_uiSummonWhelpsTimer;
-    float m_fHpPercent;
+    uint32 uiArcaneBarrageTimer;
+    uint32 uiArcaneVolleyTimer;
+    uint32 uiEnragedAssaultTimer;
+    uint32 uiSummonTimer;
 
-    uint8 m_uiAnomalyTargetIndex;
-    GuidVector m_vAnomalyTargets;
+    uint8 m_uiSummonCount;
+    std::list<Creature*> DragonsEntryList;
 
-    void Reset() override
+    bool m_bIsMove;
+
+    void Reset()
     {
-        m_uiArcaneBarrageTimer  = 0;
-        m_uiArcaneVolleyTimer   = 20000;
-        m_uiEnrageTimer         = 35000;
-        m_uiSummonWhelpsTimer   = urand(15000, 20000);
-        m_fHpPercent            = 60.0f;
-        m_uiAnomalyTargetIndex  = 0;
-    }
-
-    void Aggro(Unit* /*pWho*/) override
-    {
-        DoScriptText(SAY_AGGRO, m_creature);
-
+        m_creature->SetVisibility(VISIBILITY_ON);
         if (m_pInstance)
-            m_pInstance->SetData(TYPE_EREGOS, IN_PROGRESS);
-    }
-
-    void AttackStart(Unit* pWho) override
-    {
-        if (m_creature->Attack(pWho, false))
         {
-            m_creature->AddThreat(pWho);
-            m_creature->SetInCombatWith(pWho);
-            pWho->SetInCombatWith(m_creature);
-            DoStartMovement(pWho, 20.0f);
+           m_pInstance->SetData(TYPE_EREGOS, NOT_STARTED);
+           if(m_pInstance->GetData(TYPE_UROM) == DONE)
+           {
+              m_creature->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
+           }
+           else
+           {
+              m_creature->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
+           }
         }
+
+        m_creature->SetLevitate(true);
+        m_creature->SetUInt32Value(UNIT_FIELD_BYTES_0, 50331648);
+        m_creature->SetUInt32Value(UNIT_FIELD_BYTES_1, 50331648);
+        uiArcaneBarrageTimer = 12000;
+        uiArcaneVolleyTimer = 17000;
+        uiEnragedAssaultTimer = 24000;
+        uiSummonTimer = 15000;
+        m_uiSummonCount = 0;
+        m_bIsMove = true;
+        DragonsEntryList.clear();
     }
 
-    void KilledUnit(Unit* /*pVictim*/) override
+    void MoveInLineOfSight(Unit* pWho) override
     {
-        switch (urand(0, 2))
+        if(pWho->GetTypeId() == TYPEID_PLAYER
+           && m_creature->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE)
+           && !((Player*)pWho)->isGameMaster()
+           && m_creature->IsWithinDistInMap(pWho, 100.0f)
+           && pWho->GetVehicle()
+           && m_pInstance->GetData(TYPE_UROM) == DONE)
         {
-            case 0: DoScriptText(SAY_KILL_1, m_creature); break;
-            case 1: DoScriptText(SAY_KILL_2, m_creature); break;
-            case 2: DoScriptText(SAY_KILL_3, m_creature); break;
+              m_creature->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
         }
-    }
-
-    void JustDied(Unit* /*pKiller*/) override
-    {
-        DoScriptText(SAY_DEATH, m_creature);
-
-        if (m_pInstance)
-            m_pInstance->SetData(TYPE_EREGOS, DONE);
+        ScriptedAI::MoveInLineOfSight(pWho);
     }
 
     void JustReachedHome() override
@@ -131,192 +124,224 @@ struct boss_eregosAI : public ScriptedAI
             m_pInstance->SetData(TYPE_EREGOS, FAIL);
     }
 
-    void JustSummoned(Creature* pSummoned) override
+    void Aggro(Unit* who)
     {
-        if (pSummoned->GetEntry() == NPC_PLANAR_ANOMALY)
+        DoScriptText(SAY_AGGRO, m_creature);
+        if (m_pInstance)
+            m_pInstance->SetData(TYPE_EREGOS, IN_PROGRESS);
+    }
+
+    void KilledUnit(Unit *victim)
+    {
+        uint8 uiText = urand(0, 2);
+        switch (uiText)
         {
-            pSummoned->CastSpell(pSummoned, SPELL_PLANAR_ANOMALY_AGGRO, true);
-
-            // If this happens then something is really wrong
-            if (m_vAnomalyTargets.empty())
-                return;
-
-            if (Unit* pTarget = m_creature->GetMap()->GetUnit(m_vAnomalyTargets[m_uiAnomalyTargetIndex]))
-                pSummoned->GetMotionMaster()->MoveFollow(pTarget, 0, 0);
-
-            if (m_uiAnomalyTargetIndex < m_vAnomalyTargets.size() - 1)
-                ++m_uiAnomalyTargetIndex;
-        }
-        else if (pSummoned->GetEntry() == NPC_GREATER_LEY_WHELP)
-        {
-            if (Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0))
-                pSummoned->AI()->AttackStart(pTarget);
+           case 0: DoScriptText(SAY_KILL_1, m_creature); break;
+           case 1: DoScriptText(SAY_KILL_2, m_creature); break;
+           case 2: DoScriptText(SAY_KILL_3, m_creature); break;
         }
     }
 
-    void UpdateAI(const uint32 uiDiff) override
+    void JustDied(Unit* killer)
+    {
+        m_creature->GetMap()->CreatureRelocation(m_creature, m_creature->GetPositionX(), m_creature->GetPositionY(), m_creature->GetPositionZ()-100.0f, 0);
+        m_creature->MonsterMoveWithSpeed(m_creature->GetPositionX(), m_creature->GetPositionY(), m_creature->GetPositionZ()-100.0f, 26);
+            DoScriptText(SAY_DEATH, m_creature);
+        if (m_pInstance)
+        {
+            m_pInstance->SetData(TYPE_EREGOS, DONE);
+
+            DragonsEntryList.clear();
+            GetCreatureListWithEntryInGrid(DragonsEntryList, m_creature, NPC_RED_DRAGON, 500.0f);
+            if (DragonsEntryList.empty())
+                m_pInstance->SetSpecialAchievementCriteria(ACHIEV_RUBY_VOID, true);
+            DragonsEntryList.clear();
+
+            GetCreatureListWithEntryInGrid(DragonsEntryList, m_creature, NPC_GREEN_DRAGON, 500.0f);
+            if (DragonsEntryList.empty())
+                m_pInstance->SetSpecialAchievementCriteria(ACHIEV_EMERALD_VOID, true);
+            DragonsEntryList.clear();
+
+            GetCreatureListWithEntryInGrid(DragonsEntryList, m_creature, NPC_YELLOW_DRAGON, 500.0f);
+            if (DragonsEntryList.empty())
+                m_pInstance->SetSpecialAchievementCriteria(ACHIEV_AMBER_VOID, true);
+            DragonsEntryList.clear();
+        }
+
+    }
+
+    void DamageTaken(Unit *done_by, uint32 &damage)
+    {
+        if(m_creature->HasAura(SPELL_PLANAR_SHIFT))
+           damage = 0;
+    }
+
+    void JustSummoned(Creature* pSummoned) override
+    {
+        if(pSummoned->GetEntry() == NPC_PLANAR_ANOMALY)
+        {
+           pSummoned->SetDisplayId(11686);
+           pSummoned->SetInCombatWithZone();
+           if(Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0))
+              pSummoned->AI()->AttackStart(pTarget);
+        }
+
+        if(pSummoned->GetEntry() == NPC_DRAGON)
+        {
+           pSummoned->SetInCombatWithZone();
+           if(Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0))
+              pSummoned->AI()->AttackStart(pTarget);
+        }
+    }
+
+    void AttackStart(Unit* who)
+    {
+        if (!who)
+            return;
+
+        if (m_creature->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE))
+            return;
+
+        ScriptedAI::AttackStart(who);
+    }
+
+    void SummonAnomalies()
+    {
+        ThreatList t_list = m_creature->getThreatManager().getThreatList();
+        if (t_list.size())
+        {
+            for (ThreatList::iterator itr = t_list.begin(); itr != t_list.end(); ++itr)
+            {
+                Unit *pTarget = m_creature->GetMap()->GetUnit((*itr)->getUnitGuid());
+                if (pTarget && pTarget->isAlive() && pTarget->GetTypeId() == TYPEID_PLAYER)
+                   DoCast(m_creature, SPELL_PLANAR_ANOMALIES_SUMMON, true);
+            }
+        }
+    }
+
+    void UpdateAI(const uint32 diff)
     {
         if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
             return;
 
-        if (m_creature->HasAura(SPELL_PLANAR_SHIFT))
-            return;
-
-        if (m_creature->GetHealthPercent() < m_fHpPercent)
+        if (m_creature->GetHealthPercent() < 50.0f && m_uiSummonCount == 0)
         {
-            if (DoCastSpellIfCan(m_creature, SPELL_PLANAR_SHIFT) == CAST_OK)
-            {
-                // Get all the vehicle entries which are in combat with the boss
-                m_vAnomalyTargets.clear();
-                m_uiAnomalyTargetIndex = 0;
-
-                ThreatList const& threatList = m_creature->getThreatManager().getThreatList();
-                for (ThreatList::const_iterator itr = threatList.begin(); itr != threatList.end(); ++itr)
-                {
-                    if (Unit* pTarget = m_creature->GetMap()->GetUnit((*itr)->getUnitGuid()))
-                    {
-                        if (pTarget->GetEntry() == NPC_RUBY_DRAKE || pTarget->GetEntry() == NPC_AMBER_DRAKE || pTarget->GetEntry() == NPC_EMERALD_DRAKE)
-                            m_vAnomalyTargets.push_back(pTarget->GetObjectGuid());
-                    }
-                }
-
-                // This will summon an anomaly for each player (vehicle)
-                DoCastSpellIfCan(m_creature, SPELL_PLANAR_ANOMALIES, CAST_TRIGGERED);
-
-                switch (urand(0, 2))
-                {
-                    case 0: DoScriptText(SAY_ARCANE_SHIELD, m_creature); break;
-                    case 1: DoScriptText(SAY_FIRE_SHIELD, m_creature); break;
-                    case 2: DoScriptText(SAY_NATURE_SHIELD, m_creature); break;
-                }
-                DoScriptText(EMOTE_ASTRAL_PLANE, m_creature);
-
-                // set next phase to 20%
-                m_fHpPercent -= 40;
-            }
+           SummonAnomalies();
+           m_uiSummonCount = 1;
+           m_creature->CastSpell(m_creature, SPELL_PLANAR_SHIFT,true);
         }
 
-        if (m_uiArcaneBarrageTimer < uiDiff)
+        if(m_creature->GetHealthPercent() < 25.0f && m_uiSummonCount == 1)
         {
-            if (Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0))
-            {
-                if (DoCastSpellIfCan(pTarget, m_bIsRegularMode ? SPELL_ARCANE_BARRAGE : SPELL_ARCANE_BARRAGE_H) == CAST_OK)
-                    m_uiArcaneBarrageTimer = urand(2000, 3000);
-            }
+            SummonAnomalies();
+            m_uiSummonCount = 2;
+            m_creature->CastSpell(m_creature, SPELL_PLANAR_SHIFT,true);
         }
-        else
-            m_uiArcaneBarrageTimer -= uiDiff;
 
-        if (m_uiSummonWhelpsTimer < uiDiff)
+        if(m_creature->GetDistance2d(m_creature->getVictim()) > 35.0f && !m_bIsMove)
         {
-            // ToDo: the number of whelps summoned may be different based on difficulty. Needs research!
-            for (uint8 i = 0; i < 4; ++i)
-            {
-                if (DoCastSpellIfCan(m_creature, SPELL_SUMMON_LEY_WHELP, CAST_TRIGGERED) == CAST_OK)
-                    m_uiSummonWhelpsTimer = 20000;
-            }
+           m_bIsMove = true;
+           SetCombatMovement(m_bIsMove);
+           if(Unit* pTarget = m_creature->getVictim())
+              m_creature->GetMotionMaster()->MoveChase(pTarget);
         }
-        else
-            m_uiSummonWhelpsTimer -= uiDiff;
 
-        if (m_uiArcaneVolleyTimer < uiDiff)
+        if(m_creature->GetDistance2d(m_creature->getVictim()) < 20.0f && m_bIsMove)
         {
-            if (DoCastSpellIfCan(m_creature, m_bIsRegularMode ? SPELL_ARCANE_VOLLEY : SPELL_ARCANE_VOLLEY_H) == CAST_OK)
-                m_uiArcaneVolleyTimer = urand(10000, 15000);
+           m_bIsMove = false;
+           SetCombatMovement(m_bIsMove);
+           m_creature->GetMotionMaster()->Clear(false);
+           m_creature->GetMotionMaster()->MoveIdle();
+           m_creature->StopMoving();
         }
-        else
-            m_uiArcaneVolleyTimer -= uiDiff;
 
-        if (m_uiEnrageTimer < uiDiff)
+        if(uiArcaneBarrageTimer <= diff)
         {
-            if (DoCastSpellIfCan(m_creature, SPELL_ENRAGED_ASSAULT) == CAST_OK)
-            {
-                DoScriptText(SAY_FRENZY, m_creature);
-                m_uiEnrageTimer = urand(40000, 50000);
-            }
-        }
-        else
-            m_uiEnrageTimer -= uiDiff;
+           if(Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0))
+               DoCast(pTarget, m_bIsRegularMode ? SPELL_ARCANE_BARRAGE_N : SPELL_ARCANE_BARRAGE_H);
+              uiArcaneBarrageTimer = 3000;
+        } else uiArcaneBarrageTimer -= diff;
+
+        if(uiSummonTimer <= diff)
+        {
+           for(uint8 i = 1; i < 3; i++)
+               DoCast(m_creature, SPELL_SUMMON_DRAKE, true);
+           uiSummonTimer = 15000;
+        } else uiSummonTimer -= diff;
+
+        if(uiArcaneVolleyTimer <= diff)
+        {
+            DoCast(m_creature->getVictim(), m_bIsRegularMode ? SPELL_ARCANE_VOLLEY_N : SPELL_ARCANE_VOLLEY_H);
+            uiArcaneVolleyTimer = 17000;
+        } else uiArcaneVolleyTimer -= diff;
+
+        if(uiEnragedAssaultTimer <= diff)
+        {
+            DoCast(m_creature, SPELL_ENRAGED_ASSAULT, true);
+            uiEnragedAssaultTimer = 44000;
+        } else uiEnragedAssaultTimer -= diff;
+    }
+};
+
+struct npc_planar_anomalyAI : public ScriptedAI
+{
+    npc_planar_anomalyAI(Creature *pCreature) : ScriptedAI(pCreature)
+    {
+       Reset();
+    }
+
+    uint32 uiPulseTimer;
+    uint32 uiDeathTimer;
+
+    void Reset()
+    {
+        m_creature->SetDisplayId(11686);
+        m_creature->SetObjectScale(2.0f);
+        m_creature->SetLevitate(true);
+        m_creature->SetSpeedRate(MOVE_RUN, 1.5, true);
+        m_creature->setFaction(14);
+        m_creature->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
+        DoCast(m_creature, SPELL_PLANAR_ANOMALIES_VISUAL, true);
+        uiDeathTimer = 20500;
+        uiPulseTimer = 19000;
+    }
+
+    void UpdateAI(const uint32 diff)
+    {
+        if (uiPulseTimer < diff)
+        {
+            m_creature->RemoveAurasDueToSpell(SPELL_PLANAR_ANOMALIES_VISUAL);
+            m_creature->CastSpell(m_creature, SPELL_PLANAR_ANOMALIES_DMG, true);
+            uiPulseTimer = 6000;
+        } else uiPulseTimer -= diff;
+
+        if (uiDeathTimer < diff)
+            m_creature->DealDamage(m_creature, m_creature->GetMaxHealth(),NULL, DIRECT_DAMAGE, SPELL_SCHOOL_MASK_NORMAL, NULL, false);
+        else uiDeathTimer -= diff;
     }
 };
 
 CreatureAI* GetAI_boss_eregos(Creature* pCreature)
 {
-    return new boss_eregosAI(pCreature);
+    return new boss_eregosAI (pCreature);
 }
-
-/*######
-## npc_planar_anomaly
-######*/
-
-struct npc_planar_anomalyAI : public ScriptedAI
-{
-    npc_planar_anomalyAI(Creature* pCreature) : ScriptedAI(pCreature) { Reset(); }
-
-    uint32 m_uiPlanarBlastTimer;
-    bool m_bHasBlastCasted;
-
-    void Reset() override
-    {
-        m_uiPlanarBlastTimer = 15000;
-        m_bHasBlastCasted = false;
-    }
-
-    void AttackStart(Unit* /*pWho*/) override { }
-
-    void MoveInLineOfSight(Unit* pWho) override
-    {
-        if (m_bHasBlastCasted)
-            return;
-
-        // Check for the players mounted on the vehicles
-        if (pWho->GetTypeId() == TYPEID_PLAYER)
-        {
-            if (m_creature->IsWithinDistInMap(pWho, INTERACTION_DISTANCE))
-            {
-                if (DoCastSpellIfCan(m_creature, SPELL_PLANAR_BLAST) == CAST_OK)
-                {
-                    m_bHasBlastCasted = true;
-                    m_creature->ForcedDespawn(1000);
-                }
-            }
-        }
-    }
-
-    void UpdateAI(const uint32 uiDiff) override
-    {
-        if (m_bHasBlastCasted)
-            return;
-
-        if (m_uiPlanarBlastTimer < uiDiff)
-        {
-            if (DoCastSpellIfCan(m_creature, SPELL_PLANAR_BLAST) == CAST_OK)
-            {
-                m_bHasBlastCasted = true;
-                m_creature->ForcedDespawn(1000);
-            }
-        }
-        else
-            m_uiPlanarBlastTimer -= uiDiff;
-    }
-};
 
 CreatureAI* GetAI_npc_planar_anomaly(Creature* pCreature)
 {
-    return new npc_planar_anomalyAI(pCreature);
+    return new npc_planar_anomalyAI (pCreature);
 }
 
 void AddSC_boss_eregos()
 {
-    Script* pNewScript;
+    Script *newscript;
 
-    pNewScript = new Script;
-    pNewScript->Name = "boss_eregos";
-    pNewScript->GetAI = &GetAI_boss_eregos;
-    pNewScript->RegisterSelf();
+    newscript = new Script;
+    newscript->Name = "boss_eregos";
+    newscript->GetAI = &GetAI_boss_eregos;
+    newscript->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "npc_planar_anomaly";
-    pNewScript->GetAI = &GetAI_npc_planar_anomaly;
-    pNewScript->RegisterSelf();
+    newscript = new Script;
+    newscript->Name = "npc_planar_anomaly";
+    newscript->GetAI = &GetAI_npc_planar_anomaly;
+    newscript->RegisterSelf();
 }

@@ -1702,6 +1702,9 @@
     <ClCompile Include="..\scripts\world\pet_scripts.cpp">
       <Filter>scripts\world</Filter>
     </ClCompile>
+    <ClCompile Include="..\scripts\northrend\nexus\oculus\boss_drakos.cpp">
+      <Filter>scripts\northrend\nexus\oculus</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\base\escort_ai.h">

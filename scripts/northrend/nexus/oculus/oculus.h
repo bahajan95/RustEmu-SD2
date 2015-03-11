@@ -1,103 +1,113 @@
-/* This file is part of the ScriptDev2 Project. See AUTHORS file for Copyright information
- * This program is free software licensed under GPL version 2
- * Please see the included DOCS/LICENSE.TXT for more information */
+/* Copyright (C) 2010 - 2013 by /dev/rsa for ScriptDev2 <http://www.scriptdev2.com/>
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ */
 
 #ifndef DEF_OCULUS_H
 #define DEF_OCULUS_H
-
-/* Encounters
- * Drakos           = 0
- * Varos            = 1
- * Urom             = 2
- * Eregos           = 3
- */
+#include "BSW_ai.h"
+#include "BSW_instance.h"
 
 enum
 {
-    MAX_ENCOUNTER                   = 4,
+    TYPE_DRAKOS,
+    TYPE_VAROS,
+    TYPE_UROM,
+    TYPE_EREGOS,
+    TYPE_ROBOTS,
+    TYPE_UROM_PHASE,
+    MAX_ENCOUNTERS,
 
-    TYPE_DRAKOS                     = 0,
-    TYPE_VAROS                      = 1,
-    TYPE_UROM                       = 2,
-    TYPE_EREGOS                     = 3,
+    DATA_DRAKOS,
+    DATA_VAROS,
+    DATA_UROM,
+    DATA_EREGOS,
 
-    DATA_CONSTRUCTS_EVENT           = 1,                // DO NOT CHANGE! Used by Acid. - used to check the Centrifuge Constructs alive
+    NPC_TRIGGER            = 11364,
 
-    NPC_DRAKOS                      = 27654,
-    NPC_VAROS                       = 27447,
-    NPC_UROM                        = 27655,
-    NPC_EREGOS                      = 27656,
-    NPC_CENTRIFUGE_CONSTRUCT        = 27641,
+    NPC_ETERNOS            = 27659,
+    NPC_BELGAR             = 27658,
+    NPC_VERDISA            = 27657,
 
-    NPC_ETERNOS                     = 27659,            // bronze
-    NPC_VERDISA                     = 27657,            // emerald
-    NPC_BELGARISTRASZ               = 27658,            // ruby
-    NPC_IMAGE_OF_BELGARISTRASZ      = 28012,
+    NPC_ROBOT              = 27641,
+    NPC_BALGAR_IMAGE       = 28012,
+    NPC_DRAKOS             = 27654,
+    NPC_VAROS              = 27447,
+    NPC_UROM               = 27655,
+    NPC_EREGOS             = 27656,
 
-    // Vehicle entries
-    NPC_EMERALD_DRAKE               = 27692,
-    NPC_AMBER_DRAKE                 = 27755,
-    NPC_RUBY_DRAKE                  = 27756,
+    NPC_GREEN_DRAGON       = 27692,
+    NPC_YELLOW_DRAGON      = 27755,
+    NPC_RED_DRAGON         = 27756,
 
-    // Cages in which the friendly dragons are hold
-    GO_DRAGON_CAGE_DOOR             = 193995,
+    GO_DRAGON_CAGE_DOOR_1  = 193992,
+    GO_DRAGON_CAGE_DOOR_2  = 193993,
+    GO_DRAGON_CAGE_DOOR_3  = 193995,
+    GO_EREGOS_CACHE        = 191349,
+    GO_EREGOS_CACHE_H      = 193603,
+    GO_SPOTLIGHT           = 191351,
+    GO_ORB_OF_NEXUS        = 188715,
 
-    // Loot
-    GO_CACHE_EREGOS                 = 191349,
-    GO_CACHE_EREGOS_H               = 193603,
+    BELGAR_TEXT_0          = 13267,
+    BELGAR_TEXT_1          = 13268,
+    BELGAR_TEXT_2          = 13269,
 
-    SPELL_DEATH_SPELL               = 50415,            // summons 28012
-
-    // Instance event yells
-    SAY_EREGOS_SPAWN                = -1578010,
+    // Yells after Drakos dies
+    SAY_VAROS_INTRO                 = -1578001,
+    SAY_BELGARISTRASZ_GREET         = -1578002,
 
     // world states to show how many constructs are still alive
     WORLD_STATE_CONSTRUCTS          = 3524,
     WORLD_STATE_CONSTRUCTS_COUNT    = 3486,
 
+    // Achievements
     ACHIEV_START_EREGOS_ID          = 18153,            // eregos timed kill achiev
+
+    ACHIEV_CRITERIA_AMBER_VOID      = 7323,
+    ACHIEV_CRITERIA_EMERALD_VOID    = 7324,
+    ACHIEV_CRITERIA_RUBY_VOID       = 7325,
+
+    ACHIEV_RUBY_VOID                = 0,
+    ACHIEV_EMERALD_VOID             = 1,
+    ACHIEV_AMBER_VOID               = 2,
+    ACHIEV_COUNT                    = 3,
 };
 
-static const float aOculusBossSpawnLocs[2][4] =
-{
-    {1177.47f, 937.722f, 527.405f, 2.21657f},           // Urom
-    {1077.04f, 1086.21f, 655.497f, 4.18879f}            // Eregos
-};
-
-class instance_oculus : public ScriptedInstance
+struct instance_oculus : public ScriptedInstance
 {
     public:
         instance_oculus(Map* pMap);
-
         void Initialize() override;
 
-        void OnPlayerEnter(Player* pPlayer) override;
-        void OnCreatureCreate(Creature* pCreature) override;
         void OnObjectCreate(GameObject* pGo) override;
+        void OnCreatureCreate(Creature* pCreature) override;
 
-        void OnCreatureEnterCombat(Creature* pCreature) override;
-        void OnCreatureEvade(Creature* pCreature);
-        void OnCreatureDeath(Creature* pCreature) override;
+        bool CheckAchievementCriteriaMeet(uint32 uiCriteriaId, Player const* pSource, Unit const* pTarget, uint32 uiMiscValue1 /* = 0*/) const override;
+        void SetSpecialAchievementCriteria(uint32 uiType, bool bIsMet);
 
-        void SetData(uint32 uiType, uint32 uiData) override;
-        uint32 GetData(uint32 uiType) const override;
+        void SetData(uint32 type, uint32 data);
+        uint32 GetData(uint32 type) const;
 
-        void SetData64(uint32 uiType, uint64 uiGuid) override;
-
-        const char* Save() const override { return strInstData.c_str(); }
+        const char* Save() const override;
         void Load(const char* chrIn) override;
 
-        // Check Varos' shield
-        bool IsShieldBroken() { return m_sConstructsAliveGUIDSet.empty(); }
+    private:
+        uint32 m_auiEncounter[MAX_ENCOUNTERS+1];
 
-    protected:
-        void DoSpawnNextBossIfCan();
-
-        uint32 m_auiEncounter[MAX_ENCOUNTER];
-        std::string strInstData;
-
-        GuidList m_lCageDoorGUIDs;
-        GuidSet m_sConstructsAliveGUIDSet;
+        std::string strSaveData;
+        bool m_bIsRegularMode;
+        bool m_bAchievCriteria[ACHIEV_COUNT];
 };
 
 #endif
