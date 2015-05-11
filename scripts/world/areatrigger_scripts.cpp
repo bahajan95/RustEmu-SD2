@@ -364,6 +364,53 @@ bool AreaTrigger_at_hot_on_the_trail(Player* pPlayer, AreaTriggerEntry const* pA
     return false;
 }
 
+/*######
+## at_ancient_leaf
+######*/
+
+enum
+{
+    QUEST_ANCIENT_LEAF = 7632,
+
+    NPC_VARTRUS = 14524,
+    NPC_STOMA = 14525,
+    NPC_HASTAT = 14526,
+
+    MAX_ANCIENTS = 3,
+};
+
+struct AncientSpawn
+{
+    uint32 uiEntry;
+    float fX, fY, fZ, fO;
+};
+
+static const AncientSpawn afSpawnLocations[MAX_ANCIENTS] =
+{
+    { NPC_VARTRUS, 6204.051758f, -1172.575684f, 370.079224f, 0.86052f },    // Vartus the Ancient
+    { NPC_STOMA, 6246.953613f, -1155.985718f, 366.182953f, 2.90269f },    // Stoma the Ancient
+    { NPC_HASTAT, 6193.449219f, -1137.834106f, 366.260529f, 5.77332f },    // Hastat the Ancient
+};
+
+bool AreaTrigger_at_ancient_leaf(Player* pPlayer, AreaTriggerEntry const* pAt)
+{
+    if (pPlayer->isGameMaster() || !pPlayer->isAlive())
+        return false;
+
+    // Handle Call Ancients event start - The area trigger summons 3 ancients
+    if (pPlayer->GetQuestStatus(QUEST_ANCIENT_LEAF) == QUEST_STATUS_COMPLETE)
+    {
+        // If ancients are already spawned, skip the rest
+        if (GetClosestCreatureWithEntry(pPlayer, NPC_VARTRUS, 50.0f) || GetClosestCreatureWithEntry(pPlayer, NPC_STOMA, 50.0f) || GetClosestCreatureWithEntry(pPlayer, NPC_HASTAT, 50.0f))
+            return true;
+
+        for (uint8 i = 0; i < MAX_ANCIENTS; ++i)
+            pPlayer->SummonCreature(afSpawnLocations[i].uiEntry, afSpawnLocations[i].fX, afSpawnLocations[i].fY, afSpawnLocations[i].fZ, afSpawnLocations[i].fO, TEMPSUMMON_TIMED_DESPAWN, 5 * MINUTE * IN_MILLISECONDS);
+    }
+
+    return false;
+}
+
 void AddSC_areatrigger_scripts()
 {
     AutoScript s;
@@ -403,4 +450,7 @@ void AddSC_areatrigger_scripts()
 
     s.newScript("at_hot_on_the_trail");
     s->pAreaTrigger = &AreaTrigger_at_hot_on_the_trail;
+
+    s.newScript("at_ancient_leaf");
+    s->pAreaTrigger = &AreaTrigger_at_ancient_leaf;
 }
