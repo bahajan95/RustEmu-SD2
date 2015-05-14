@@ -23,6 +23,7 @@ EndScriptData */
 
 #include "precompiled.h"
 #include "oculus.h"
+
 enum Spells
 {
     SPELL_GREEN_SEAT                        = 49346,

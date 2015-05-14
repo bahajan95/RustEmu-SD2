@@ -224,6 +224,7 @@ InstanceData* GetInstanceData_instance_oculus(Map* pMap)
 /*### 
 # Oculus Orb 
 -####*/ 
+
 bool GOUse_go_oculus_portal(Player* pPlayer, GameObject* pGo) 
 { 
     switch(pGo->GetEntry()) 

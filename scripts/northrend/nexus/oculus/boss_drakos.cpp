@@ -281,15 +281,15 @@ CreatureAI* GetAI_npc_unstable_sphere(Creature* pCreature)
 
 void AddSC_boss_drakos()
 {
-    Script *pNewScript;
+    Script *newscript;
 
-    pNewScript = new Script;
-    pNewScript->Name = "boss_drakos";
-    pNewScript->GetAI = &GetAI_boss_drakos;
-    pNewScript->RegisterSelf();
+    newscript = new Script;
+    newscript->Name = "boss_drakos";
+    newscript->GetAI = &GetAI_boss_drakos;
+    newscript->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "npc_unstable_sphere";
-    pNewScript->GetAI = &GetAI_npc_unstable_sphere;
-    pNewScript->RegisterSelf();
+    newscript = new Script;
+    newscript->Name = "npc_unstable_sphere";
+    newscript->GetAI = &GetAI_npc_unstable_sphere;
+    newscript->RegisterSelf();
 }

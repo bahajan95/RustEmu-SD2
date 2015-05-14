@@ -1,6 +1,7 @@
 -- ---------------
 -- Oculus instance
 -- ---------------
+
 -- ---------------------- Script Names ----------------------
 UPDATE `creature_template` SET `ScriptName` = 'mob_oculus_dragon' WHERE `entry` IN (27692, 27756, 27755);
 UPDATE `creature_template` SET `ScriptName` = 'npc_unstable_sphere' WHERE entry = 28166;
