@@ -69,11 +69,6 @@ INSERT INTO scripted_areatrigger VALUES
 (1738,'at_scent_larkorwi'),
 (1739,'at_scent_larkorwi'),
 (1740,'at_scent_larkorwi');
-DELETE FROM scripted_areatrigger WHERE entry IN (5604,5709,5732);
-INSERT INTO scripted_areatrigger VALUES
-(5604,'at_icecrown_citadel'),
-(5709,'at_icecrown_citadel'),
-(5732,'at_icecrown_citadel');
 DELETE FROM scripted_areatrigger WHERE entry in (4288,4485);
 INSERT INTO scripted_areatrigger VALUES
 (4288,'at_dark_portal'),
@@ -768,10 +763,6 @@ UPDATE creature_template SET ScriptName='mob_big_ooze' WHERE entry=36899;
 UPDATE creature_template SET ScriptName='boss_valithria_dreamwalker' WHERE entry=36789;
 UPDATE creature_template SET ScriptName='boss_professor_putricide' WHERE entry=36678;
 UPDATE creature_template SET ScriptName='boss_the_lich_king_icc' WHERE entry=36597;
-DELETE FROM scripted_event_id WHERE id IN (23426,23438);
-INSERT INTO scripted_event_id VALUES
-(23426,'event_gameobject_citadel_valve'),
-(23438,'event_gameobject_citadel_valve');
 
 /* FORGE OF SOULS */
 UPDATE creature_template SET ScriptName='boss_bronjahm' WHERE entry=36497;
@@ -968,9 +959,6 @@ UPDATE instance_template SET ScriptName='instance_eye_of_eternity' WHERE map=616
 UPDATE creature_template SET ScriptName='boss_malygos' WHERE entry=28859;
 UPDATE creature_template SET ScriptName='npc_power_spark' WHERE entry=30084;
 UPDATE creature_template SET ScriptName='npc_wyrmrest_skytalon' WHERE entry=30161;
-DELETE FROM scripted_event_id WHERE id=20711;
-INSERT INTO scripted_event_id VALUES
-(20711,'event_go_focusing_iris');
 
 /* NEXUS */
 UPDATE creature_template SET ScriptName='boss_anomalus' WHERE entry=26763;
@@ -987,17 +975,10 @@ UPDATE instance_template SET ScriptName='instance_oculus' WHERE map=578;
 UPDATE creature_template SET ScriptName='boss_eregos' WHERE entry=27656;
 UPDATE creature_template SET ScriptName='boss_urom' WHERE entry=27655;
 UPDATE creature_template SET ScriptName='boss_varos' WHERE entry=27447;
-UPDATE creature_template SET ScriptName='npc_azure_ring_captain' WHERE entry=28236;
 UPDATE creature_template SET ScriptName='npc_arcane_beam' WHERE entry=28239;
 UPDATE creature_template SET ScriptName='npc_centrifuge_core' WHERE entry=28183;
 UPDATE creature_template SET ScriptName='npc_planar_anomaly' WHERE entry=30879;
 UPDATE creature_template SET ScriptName='npc_oculus_drake' WHERE entry IN (27756, 27692, 27755);
-DELETE FROM scripted_event_id WHERE id IN (10665,12229,18454,18455);
-INSERT INTO scripted_event_id VALUES
-(10665,'event_spell_call_captain'),
-(12229,'event_spell_call_captain'),
-(18454,'event_spell_call_captain'),
-(18455,'event_spell_call_captain');
 
 /* OBSIDIAN SANCTUM */
 UPDATE instance_template SET ScriptName='instance_obsidian_sanctum' WHERE map=615;

@@ -275,8 +275,9 @@ extern void AddSC_instance_gundrak();
 extern void AddSC_boss_bronjahm();                          // ICC, forge_of_souls
 extern void AddSC_boss_devourer_of_souls();
 extern void AddSC_instance_forge_of_souls();
+extern void AddSC_forge_of_souls();
 extern void AddSC_boss_falric();                            // ICC, halls_of_reflection
-extern void AddSC_boss_lich_king();
+extern void AddSC_boss_lich_king_hr();
 extern void AddSC_boss_marwyn();
 extern void AddSC_halls_of_reflection();
 extern void AddSC_instance_halls_of_reflection();
@@ -324,6 +325,7 @@ extern void AddSC_boss_keristrasza();
 extern void AddSC_boss_ormorok();
 extern void AddSC_boss_telestra();
 extern void AddSC_instance_nexus();
+extern void AddSC_boss_drakos();                            // nexus, oculus
 extern void AddSC_boss_eregos();                            // nexus, oculus
 extern void AddSC_boss_urom();
 extern void AddSC_boss_varos();
@@ -390,6 +392,7 @@ extern void AddSC_howling_fjord();
 extern void AddSC_icecrown();
 extern void AddSC_sholazar_basin();
 extern void AddSC_storm_peaks();
+extern void AddSC_wintergrasp();
 extern void AddSC_zuldrak();
 
 // outland
@@ -748,8 +751,9 @@ void AddScripts()
     AddSC_boss_bronjahm();                                  // ICC, FH, forge_of_souls
     AddSC_boss_devourer_of_souls();
     AddSC_instance_forge_of_souls();
+    AddSC_forge_of_souls();
     AddSC_boss_falric();                                    // ICC, FH, halls_of_reflection
-    AddSC_boss_lich_king();
+    AddSC_boss_lich_king_hr();
     AddSC_boss_marwyn();
     AddSC_halls_of_reflection();
     AddSC_instance_halls_of_reflection();
@@ -797,6 +801,7 @@ void AddScripts()
     AddSC_boss_ormorok();
     AddSC_boss_telestra();
     AddSC_instance_nexus();
+    AddSC_boss_drakos();                                    // nexus, oculus
     AddSC_boss_eregos();                                    // nexus, oculus
     AddSC_boss_urom();
     AddSC_boss_varos();
@@ -863,6 +868,7 @@ void AddScripts()
     AddSC_icecrown();
     AddSC_sholazar_basin();
     AddSC_storm_peaks();
+    AddSC_wintergrasp();
     AddSC_zuldrak();
 
     // outland

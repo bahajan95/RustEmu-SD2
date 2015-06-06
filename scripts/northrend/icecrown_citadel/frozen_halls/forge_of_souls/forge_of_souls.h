@@ -1,13 +1,15 @@
-/* This file is part of the ScriptDev2 Project. See AUTHORS file for Copyright information
+/* Copyright (C) 2006 - 2013 ScriptDev2 <http://www.scriptdev2.com/>
  * This program is free software licensed under GPL version 2
  * Please see the included DOCS/LICENSE.TXT for more information */
 
 #ifndef DEF_FORGE_OF_SOULS_H
 #define DEF_FORGE_OF_SOULS_H
+#include "BSW_ai.h"
 
 enum
 {
     MAX_ENCOUNTER               = 2,
+    TYPE_INTRO                  = 0,
     TYPE_BRONJAHM               = 1,
     TYPE_DEVOURER_OF_SOULS      = 2,
     TYPE_ACHIEV_PHANTOM_BLAST   = 3,

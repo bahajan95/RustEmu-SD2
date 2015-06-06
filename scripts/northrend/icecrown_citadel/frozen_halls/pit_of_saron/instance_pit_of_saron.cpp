@@ -1,4 +1,4 @@
-/* This file is part of the ScriptDev2 Project. See AUTHORS file for Copyright information
+/* Copyright (C) 2006 - 2013 ScriptDev2 <http://www.scriptdev2.com/>
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
 * the Free Software Foundation; either version 2 of the License, or
@@ -307,10 +307,12 @@ void instance_pit_of_saron::SetData(uint32 uiType, uint32 uiData)
         case TYPE_AMBUSH:
             if (uiData == DONE)
             {
-                // Complete tunnel achievement
-                if (Creature* pTyrannus = GetSingleCreatureFromStorage(NPC_TYRANNUS))
-                    pTyrannus->CastSpell(pTyrannus, SPELL_ACHIEVEMENT_CHECK, true);
+                Creature* pTyrannus = GetSingleCreatureFromStorage(NPC_TYRANNUS);
+                if (!pTyrannus)
+                    return;
 
+                // ToDo: enable this when the achiev check spells are implemented
+                // pTyrannus->CastSpell(pTyrannus, SPELL_ACHIEVEMENT_CHECK, true);
                 m_uiIciclesTimer = 0;
             }
             m_auiEncounter[uiType] = uiData;

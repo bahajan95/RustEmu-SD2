@@ -1,4 +1,4 @@
-/* This file is part of the ScriptDev2 Project. See AUTHORS file for Copyright information
+/* Copyright (C) 2006 - 2013 ScriptDev2 <http://www.scriptdev2.com/>
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
@@ -16,152 +16,238 @@
 
 /* ScriptData
 SDName: instance_halls_of_reflection
-SD%Complete: 10
-SDComment: Basic support
-SDCategory: Halls of Reflection
+SD%Complete: 70%
+SDComment:
+SDErrors:
+SDCategory: instance script
+SDAuthor: /dev/rsa, modified by MaxXx2021 aka Mioka
 EndScriptData */
 
 #include "precompiled.h"
 #include "halls_of_reflection.h"
+#include "World.h"
 
-instance_halls_of_reflection::instance_halls_of_reflection(Map* pMap) : ScriptedInstance(pMap),
-    m_uiTeam(TEAM_NONE)
+struct instance_halls_of_reflection : public BSWScriptedInstance
 {
-    Initialize();
-}
-
-void instance_halls_of_reflection::Initialize()
-{
-    memset(&m_auiEncounter, 0, sizeof(m_auiEncounter));
-}
-
-void instance_halls_of_reflection::OnPlayerEnter(Player* pPlayer)
-{
-    if (!m_uiTeam)                                          // very first player to enter
+    instance_halls_of_reflection(Map* pMap) : BSWScriptedInstance(pMap) 
     {
-        m_uiTeam = pPlayer->GetTeam();
+        Difficulty = pMap->GetDifficulty();
+        Initialize();
+    }
 
-        // Spawn intro npcs
-        for (uint8 i = 0; i < countof(aEventBeginLocations); ++i)
+    uint32 m_auiEncounter[MAX_ENCOUNTERS+1];
+    std::string strSaveData;
+
+    uint8 Difficulty;
+    uint8 m_uiSummons;
+    uint8 m_waveCount;
+
+    uint32 m_auiLeader;
+
+    ObjectGuid m_uiCaptainsChestHordeGUID;
+    ObjectGuid m_uiCaptainsChestAllianceGUID;
+
+    void Initialize() override
+    {
+        for (uint8 i = 0; i < MAX_ENCOUNTERS; ++i)
+            m_auiEncounter[i] = NOT_STARTED;
+        m_waveCount = 0;
+    }
+
+    void OnCreatureCreate(Creature* pCreature) override
+    {
+        switch(pCreature->GetEntry())
         {
-            pPlayer->SummonCreature(m_uiTeam == HORDE ? aEventBeginLocations[i].uiEntryHorde : aEventBeginLocations[i].uiEntryAlliance,
-                aEventBeginLocations[i].fX, aEventBeginLocations[i].fY, aEventBeginLocations[i].fZ, aEventBeginLocations[i].fO, TEMPSUMMON_DEAD_DESPAWN, 0);
+            case NPC_JAINA:
+            case NPC_SYLVANA:
+            case NPC_JAINA_OUTRO:
+            case NPC_SYLVANA_OUTRO:
+            case NPC_ALTAR_TARGET:
+            case NPC_LICH_KING:
+            case NPC_FALRIC:
+            case NPC_MARWYN:
+            case BOSS_LICH_KING:
+            case NPC_FROST_GENERAL:
+            case NPC_QUEL_DELAR:
+            case NPC_UTHER:
+                   m_mNpcEntryGuidStore[pCreature->GetEntry()] = pCreature->GetObjectGuid();
+                   break;
         }
     }
-}
 
-void instance_halls_of_reflection::OnCreatureCreate(Creature* pCreature)
-{
-    switch (pCreature->GetEntry())
+    void OnObjectCreate(GameObject* pGo) override
     {
-        case NPC_JAINA_PART1:
-        case NPC_JAINA_PART2:
-        case NPC_SYLVANAS_PART1:
-        case NPC_SYLVANAS_PART2:
-        case NPC_FALRIC:
-        case NPC_MARWYN:
-        case NPC_LICH_KING:
-            break;
-        default:
+        switch(pGo->GetEntry())
+        {
+            case  GO_IMPENETRABLE_DOOR: if (GetData(TYPE_MARWYN) == DONE)
+                                            pGo->SetGoState(GO_STATE_ACTIVE);
+                                        break;
+            case  GO_ICECROWN_DOOR_2:   if (GetData(TYPE_FROST_GENERAL) == DONE)
+                                            pGo->SetGoState(GO_STATE_ACTIVE);
+                                        break;
+            case  GO_CAPTAIN_CHEST_1:
+                                  if (Difficulty == RAID_DIFFICULTY_10MAN_NORMAL)
+                                  m_uiCaptainsChestHordeGUID = pGo->GetObjectGuid(); 
+                                  break;
+            case  GO_CAPTAIN_CHEST_3:
+                                  if (Difficulty == RAID_DIFFICULTY_25MAN_NORMAL)
+                                  m_uiCaptainsChestHordeGUID = pGo->GetObjectGuid(); 
+                                  break;
+            case  GO_CAPTAIN_CHEST_2:
+                                  if (Difficulty == RAID_DIFFICULTY_10MAN_NORMAL)
+                                  m_uiCaptainsChestAllianceGUID = pGo->GetObjectGuid(); 
+                                  break;
+            case  GO_CAPTAIN_CHEST_4:
+                                  if (Difficulty == RAID_DIFFICULTY_25MAN_NORMAL)
+                                  m_uiCaptainsChestAllianceGUID = pGo->GetObjectGuid(); 
+                                  break;
+
+            case  GO_ICE_WALL:
+                                  pGo->SetPhaseMask(65535, true);
+                                  break;
+            case  GO_CAVE:
+                                  pGo->SetGoState(GO_STATE_ACTIVE);;
+                                  break;
+        }
+        m_mGoEntryGuidStore[pGo->GetEntry()] = pGo->GetObjectGuid();
+    }
+
+    void SetData(uint32 uiType, uint32 uiData) override
+    {
+        switch(uiType)
+        {
+            case TYPE_PHASE:                m_auiEncounter[uiType] = uiData; break;
+            case TYPE_EVENT:                m_auiEncounter[uiType] = uiData;
+                                            uiData = NOT_STARTED;
+                break;
+            case TYPE_FALRIC:               m_auiEncounter[uiType] = uiData;
+                                            if (uiData == SPECIAL)
+                                                DoCloseDoor(GO_ICECROWN_DOOR);
+                                            else if (uiData == FAIL)
+                                                DoOpenDoor(GO_ICECROWN_DOOR);
+                break;
+            case TYPE_MARWYN:               m_auiEncounter[uiType] = uiData;
+                                            if (uiData == SPECIAL)
+                                                DoCloseDoor(GO_ICECROWN_DOOR);
+                                            else if (uiData == FAIL)
+                                                DoOpenDoor(GO_ICECROWN_DOOR);
+                                            else if (uiData == DONE)
+                                            {
+                                               DoOpenDoor(GO_IMPENETRABLE_DOOR);
+                                               DoOpenDoor(GO_ICECROWN_DOOR);
+                                            }
+                break;
+            case TYPE_FROST_GENERAL:        m_auiEncounter[uiType] = uiData; 
+                                            if(uiData == DONE)
+                                               DoOpenDoor(GO_ICECROWN_DOOR_2);
+                break;
+            case TYPE_LICH_KING:            m_auiEncounter[uiType] = uiData;
+                                            if(uiData == IN_PROGRESS)
+                                               DoOpenDoor(GO_ICECROWN_DOOR_3);
+                                            if(uiData == DONE)
+                                            {
+                                                if (GameObject* pChest = instance->GetGameObject(m_uiCaptainsChestAllianceGUID))
+                                                    if (pChest && !pChest->isSpawned() && GetData(DATA_ESCAPE_LIDER) == NPC_JAINA_OUTRO)
+                                                    {
+                                                        pChest->SetRespawnTime(DAY);
+                                                    }
+                                                if (GameObject* pChest = instance->GetGameObject(m_uiCaptainsChestHordeGUID))
+                                                    if (pChest && !pChest->isSpawned() && GetData(DATA_ESCAPE_LIDER) == NPC_SYLVANA_OUTRO)
+                                                    {
+                                                        pChest->SetRespawnTime(DAY);
+                                                    };
+                                                if (GameObject* pPortal = GetSingleGameObjectFromStorage(GO_PORTAL))
+                                                    if (pPortal && !pPortal->isSpawned()) 
+                                                    {
+                                                        pPortal->SetRespawnTime(DAY);
+                                                    };
+                                            }
+                break;
+            case TYPE_HALLS:                m_auiEncounter[uiType] = uiData; break;
+            case DATA_SUMMONS:              if (uiData == 3) m_uiSummons = 0;
+                                            else if (uiData == 1) ++m_uiSummons;
+                                            else if (uiData == 0) --m_uiSummons;
+                                            uiData = NOT_STARTED;
+                break;
+            case DATA_ESCAPE_LIDER:         m_auiLeader = uiData;
+                                            uiData = NOT_STARTED;
+            case DATA_WAVE_COUNT:           m_waveCount = uiData;
+                                            uiData = NOT_STARTED;
+                                            if (m_waveCount > 0 && m_waveCount < 10)
+                                            {
+                                                DoUpdateWorldState(WORLD_STATE_HOR, 1);
+                                                DoUpdateWorldState(WORLD_STATE_HOR_WAVE_COUNT, m_waveCount);
+                                            }
+                                            else
+                                                DoUpdateWorldState(WORLD_STATE_HOR, 0);
+                break;
+            default:
+                break;
+        }
+
+        if (uiData == DONE)
+        {
+            OUT_SAVE_INST_DATA;
+
+            std::ostringstream saveStream;
+
+            for(uint8 i = 0; i < MAX_ENCOUNTERS; ++i)
+                saveStream << m_auiEncounter[i] << " ";
+
+            strSaveData = saveStream.str();
+
+            SaveToDB();
+            OUT_SAVE_INST_DATA_COMPLETE;
+        }
+    }
+
+    const char* Save() const override
+    {
+        return strSaveData.c_str();
+    }
+
+    uint32 GetData(uint32 uiType) const override
+    {
+        switch(uiType)
+        {
+            case TYPE_PHASE:                return m_auiEncounter[uiType];
+            case TYPE_EVENT:                return m_auiEncounter[uiType];
+            case TYPE_FALRIC:               return m_auiEncounter[uiType];
+            case TYPE_MARWYN:               return m_auiEncounter[uiType];
+            case TYPE_LICH_KING:            return m_auiEncounter[uiType];
+            case TYPE_FROST_GENERAL:        return m_auiEncounter[uiType];
+            case TYPE_HALLS:                return m_auiEncounter[uiType];
+            case DATA_SUMMONS:              return m_uiSummons;
+            case DATA_ESCAPE_LIDER:         return m_auiLeader;
+            default:                        return 0;
+        }
+        return 0;
+    }
+
+    void Load(const char* chrIn) override
+    {
+        if (!chrIn)
+        {
+            OUT_LOAD_INST_DATA_FAIL;
             return;
-    }
-    m_mNpcEntryGuidStore[pCreature->GetEntry()] = pCreature->GetObjectGuid();
-}
+        }
 
-void instance_halls_of_reflection::OnObjectCreate(GameObject* pGo)
-{
-    switch (pGo->GetEntry())
-    {
-        case GO_IMPENETRABLE_DOOR:
-            if (m_auiEncounter[TYPE_MARWYN] == DONE)
-                pGo->SetGoState(GO_STATE_ACTIVE);
-            break;
-        case GO_FROSTMOURNE:
-        case GO_FROSTMOURNE_ALTAR:
-        case GO_ICECROWN_DOOR_ENTRANCE:
-        case GO_ICECROWN_DOOR_LK_ENTRANCE:
-        case GO_ICECROWN_DOOR_LK_EXIT:
-        case GO_CAVE_IN:
+        OUT_LOAD_INST_DATA(chrIn);
 
-        case GO_CAPTAIN_CHEST_HORDE:
-        case GO_CAPTAIN_CHEST_HORDE_H:
-        case GO_CAPTAIN_CHEST_ALLIANCE:
-        case GO_CAPTAIN_CHEST_ALLIANCE_H:
-            break;
-        default:
-            return;
-    }
-    m_mGoEntryGuidStore[pGo->GetEntry()] = pGo->GetObjectGuid();
-}
+        std::istringstream loadStream(chrIn);
 
-void instance_halls_of_reflection::SetData(uint32 uiType, uint32 uiData)
-{
-    switch (uiType)
-    {
-        case TYPE_FALRIC:
-            m_auiEncounter[uiType] = uiData;
-            break;
-        case TYPE_MARWYN:
-            if (uiData == DONE)
-                DoUseDoorOrButton(GO_IMPENETRABLE_DOOR);
-            m_auiEncounter[uiType] = uiData;
-            break;
-        case TYPE_LICH_KING:
-            if (uiData == DONE)
-            {
-                uint32 uiChestEntry = m_uiTeam == ALLIANCE ? (instance->IsRegularDifficulty() ? GO_CAPTAIN_CHEST_ALLIANCE : GO_CAPTAIN_CHEST_ALLIANCE_H) :
-                        (instance->IsRegularDifficulty() ? GO_CAPTAIN_CHEST_HORDE : GO_CAPTAIN_CHEST_HORDE_H);
-                DoToggleGameObjectFlags(uiChestEntry, GO_FLAG_NO_INTERACT, false);
-            }
-            m_auiEncounter[uiType] = uiData;
-            break;
-        default:
-            return;
+        for(uint8 i = 0; i < MAX_ENCOUNTERS; ++i)
+        {
+            loadStream >> m_auiEncounter[i];
+
+            if (m_auiEncounter[i] == IN_PROGRESS)
+                m_auiEncounter[i] = NOT_STARTED;
+        }
+
+        OUT_LOAD_INST_DATA_COMPLETE;
     }
 
-    if (uiData == DONE)
-    {
-        OUT_SAVE_INST_DATA;
-
-        std::ostringstream saveStream;
-        saveStream << m_auiEncounter[0] << " " << m_auiEncounter[1] << " " << m_auiEncounter[2];
-
-        m_strInstData = saveStream.str();
-
-        SaveToDB();
-        OUT_SAVE_INST_DATA_COMPLETE;
-    }
-}
-
-void instance_halls_of_reflection::Load(const char* chrIn)
-{
-    if (!chrIn)
-    {
-        OUT_LOAD_INST_DATA_FAIL;
-        return;
-    }
-
-    OUT_LOAD_INST_DATA(chrIn);
-
-    std::istringstream loadStream(chrIn);
-    loadStream >> m_auiEncounter[0] >> m_auiEncounter[1] >> m_auiEncounter[2];
-
-    for (uint8 i = 0; i < MAX_ENCOUNTER; ++i)
-    {
-        if (m_auiEncounter[i] == IN_PROGRESS)
-            m_auiEncounter[i] = NOT_STARTED;
-    }
-
-    OUT_LOAD_INST_DATA_COMPLETE;
-}
-
-uint32 instance_halls_of_reflection::GetData(uint32 uiType) const
-{
-    if (uiType < MAX_ENCOUNTER)
-        return m_auiEncounter[uiType];
-
-    return 0;
-}
+};
 
 InstanceData* GetInstanceData_instance_halls_of_reflection(Map* pMap)
 {
@@ -170,10 +256,9 @@ InstanceData* GetInstanceData_instance_halls_of_reflection(Map* pMap)
 
 void AddSC_instance_halls_of_reflection()
 {
-    Script* pNewScript;
-
-    pNewScript = new Script;
-    pNewScript->Name = "instance_halls_of_reflection";
-    pNewScript->GetInstanceData = &GetInstanceData_instance_halls_of_reflection;
-    pNewScript->RegisterSelf();
+    Script *newscript;
+    newscript = new Script;
+    newscript->Name = "instance_halls_of_reflection";
+    newscript->GetInstanceData = &GetInstanceData_instance_halls_of_reflection;
+    newscript->RegisterSelf();
 }

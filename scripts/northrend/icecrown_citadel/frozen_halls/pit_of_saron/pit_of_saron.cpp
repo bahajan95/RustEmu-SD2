@@ -1,4 +1,4 @@
-/* This file is part of the ScriptDev2 Project. See AUTHORS file for Copyright information
+/* Copyright (C) 2006 - 2013 ScriptDev2 <http://www.scriptdev2.com/>
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
@@ -36,7 +36,7 @@ enum
     // Icicles
     SPELL_ICICLE                        = 69426,
     SPELL_ICICLE_DUMMY                  = 69428,
-    SPELL_ICE_SHARDS_H                  = 70827,            // used to check the tunnel achievement
+    SPELL_ICE_SHARDS                    = 69425,
 };
 
 /*######
@@ -132,7 +132,7 @@ struct npc_collapsing_icicleAI : public ScriptedAI
     void SpellHitTarget(Unit* pTarget, const SpellEntry* pSpell) override
     {
         // Mark the achiev failed
-        if (pSpell->Id == SPELL_ICE_SHARDS_H && pTarget->GetTypeId() == TYPEID_PLAYER && m_pInstance)
+        if (pSpell->Id == SPELL_ICE_SHARDS && pTarget->GetTypeId() == TYPEID_PLAYER && m_pInstance)
             m_pInstance->SetSpecialAchievementCriteria(TYPE_ACHIEV_DONT_LOOK_UP, false);
     }
 

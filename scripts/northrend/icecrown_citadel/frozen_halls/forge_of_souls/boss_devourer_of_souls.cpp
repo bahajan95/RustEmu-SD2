@@ -1,4 +1,4 @@
-/* This file is part of the ScriptDev2 Project. See AUTHORS file for Copyright information
+/* Copyright (C) 2006 - 2013 ScriptDev2 <http://www.scriptdev2.com/>
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
@@ -74,12 +74,12 @@ enum
 
 static const int aTexts[6][3] =
 {
-    {SAY_MALE_1_AGGRO,       SAY_FEMALE_AGGRO,       0},    // 0 - aggro
+    {SAY_MALE_1_AGGRO,       SAY_FEMALE_AGGRO,       0},                        // 0 - aggro
     {SAY_MALE_1_SLAY_1,      SAY_FEMALE_SLAY_1,      SAY_MALE_2_SLAY_1},        // 1 - slay1
     {SAY_MALE_1_SLAY_2,      SAY_FEMALE_SLAY_2,      SAY_MALE_2_SLAY_2},        // 2 - slay2
     {SAY_MALE_1_DEATH,       SAY_FEMALE_DEATH,       SAY_MALE_2_DEATH},         // 3 - death
     {SAY_MALE_1_SOUL_ATTACK, SAY_FEMALE_SOUL_ATTACK, SAY_MALE_2_SOUL_ATTACK},   // 4 - unleashing soul
-    {SAY_MALE_1_DARK_GLARE,  SAY_FEMALE_DARK_GLARE,  0}     // 5 - glare
+    {SAY_MALE_1_DARK_GLARE,  SAY_FEMALE_DARK_GLARE,  0}                         // 5 - glare
 };
 
 struct boss_devourer_of_soulsAI : public ScriptedAI
@@ -190,13 +190,13 @@ struct boss_devourer_of_soulsAI : public ScriptedAI
     {
         switch (pSpellEntry->Id)
         {
-                // If we hit a target with phantom blast, the achievement_criteria is failed
+            // If we hit a target with phantom blast, the achievement_criteria is failed
             case SPELL_PHANTOM_BLAST:
             case SPELL_PHANTOM_BLAST_H:
                 if (m_pInstance)
                     m_pInstance->SetData(TYPE_ACHIEV_PHANTOM_BLAST, FAIL);
                 break;
-                // Might be placed somewhere else better, important is to note that this text is said after the 3s cast time
+            // Might be placed somewhere else better, important is to note that this text is said after the 3s cast time
             case SPELL_WAILING_SOULS:
                 DoScriptText(aTexts[5][m_uiFace], m_creature);
                 break;

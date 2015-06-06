@@ -413,7 +413,7 @@ enum
     HORDE_COORDS                = 6
 };
 
-static StaticLocation AllianceCoords[] =
+static StaticLocation AllianceCoords[]=
 {
     { -3757.38f, -4533.05f, 14.16f, 3.62f},                 // Top-far-right bunk as seen from entrance
     { -3754.36f, -4539.13f, 14.16f, 5.13f},                 // Top-far-left bunk

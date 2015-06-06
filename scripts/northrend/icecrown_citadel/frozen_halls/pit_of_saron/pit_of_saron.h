@@ -1,4 +1,4 @@
-/* This file is part of the ScriptDev2 Project. See AUTHORS file for Copyright information
+/* Copyright (C) 2006 - 2013 ScriptDev2 <http://www.scriptdev2.com/>
  * This program is free software licensed under GPL version 2
  * Please see the included DOCS/LICENSE.TXT for more information */
 
@@ -62,13 +62,8 @@ enum
     NPC_YMIRJAR_FLAMEBEARER         = 36893,
     NPC_FALLEN_WARRIOR              = 36841,
     NPC_COLDWRAITH                  = 36842,
-    NPC_STALKER                     = 32780,                // used to handle icicles during the tunnel event
-    NPC_GENERAL_BUNNY               = 24110,                // used to handle visuals for the last encounter
-
-    // epilog npcs - used during the Tyrannus encounter
-    NPC_WRATHBONE_SORCERER          = 37728,
-    NPC_WRATHBONE_REAVER            = 37729,
-    NPC_FALLEN_WARRIOR_EPILOG       = 38487,
+    NPC_STALKER                     = 32780,
+    NPC_GENERAL_BUNNY               = 24110,
 
     GO_ICEWALL                      = 201885,               // open after gafrost/krick
     GO_HALLS_OF_REFLECT_PORT        = 201848,               // unlocked by jaina/sylvanas at last outro
@@ -163,7 +158,7 @@ class instance_pit_of_saron : public ScriptedInstance, private DialogueHelper
         const char* Save() const override { return m_strInstData.c_str(); }
         void Load(const char* chrIn) override;
 
-        void Update(uint32 uiDiff);
+        void Update(uint32 uiDiff) override;
 
     protected:
         void JustDidDialogueStep(int32 iEntry) override;

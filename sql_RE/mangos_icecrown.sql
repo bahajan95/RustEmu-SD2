@@ -144,8 +144,8 @@ INSERT INTO `creature_template_addon` (`entry`, `auras`) VALUES (38222, "71494")
 -- Marrowgar
 -- ---------
 
-UPDATE `creature_template` SET `ScriptName`='mob_coldflame', `MinLevel` = 82, `MaxLevel` = 82, `ModelId1` = 11686, `ModelId2` = 11686, `ModelId3` = 11686, `ModelId4` = 11686, `FactionAlliance` = 14, `FactionHorde` = 14, `AIName`=''  WHERE `entry`= 36672;
-UPDATE `creature_template` SET `ScriptName`='mob_bone_spike', `AIName`='' WHERE `entry`= 38711;
+UPDATE `creature_template` SET `ScriptName`='npc_coldflame', `MinLevel` = 82, `MaxLevel` = 82, `ModelId1` = 11686, `ModelId2` = 11686, `ModelId3` = 11686, `ModelId4` = 11686, `FactionAlliance` = 14, `FactionHorde` = 14, `AIName`=''  WHERE `entry`= 36672;
+UPDATE `creature_template` SET `ScriptName`='npc_bone_spike', `AIName`='' WHERE `entry`= 38711;
 
 -- --------------
 -- Gunship battle

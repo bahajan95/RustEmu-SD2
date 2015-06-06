@@ -1,4 +1,4 @@
-/* This file is part of the ScriptDev2 Project. See AUTHORS file for Copyright information
+/* Copyright (C) 2006 - 2013 ScriptDev2 <http://www.scriptdev2.com/>
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
@@ -16,8 +16,8 @@
 
 /* ScriptData
 SDName: boss_scourgelord_tyrannus
-SD%Complete: 90
-SDComment: Small adjustments may be required
+SD%Complete: 80
+SDComment: Icy Blast not fully implemented.
 SDCategory: Pit of Saron
 EndScriptData */
 
@@ -48,7 +48,7 @@ enum
     SPELL_KILLING_ICE                   = 72531,
 
     // Icy blast
-    // SPELL_ICY_BLAST_AURA             = 69238,
+    SPELL_ICY_BLAST_AURA                = 69238,
     NPC_ICY_BLAST                       = 36731,                // handled in eventAI
 };
 
@@ -231,7 +231,7 @@ struct boss_rimefang_posAI : public ScriptedAI
 
     void EnterEvadeMode() override
     {
-        m_creature->RemoveAllAurasOnEvade();
+        m_creature->RemoveAllAuras();
         m_creature->DeleteThreatList();
         m_creature->CombatStop(true);
         m_creature->LoadCreatureAddon(true);
